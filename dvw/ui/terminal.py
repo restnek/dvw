@@ -1,29 +1,27 @@
 from rich import box, print
 from rich.console import RenderGroup
 from rich.panel import Panel
-from rich.table import Column, Table
+from rich.table import Table
 from rich.text import Text
-
-from .util import around
 
 
 class PropPanel(Panel):
     def __init__(
             self,
             rows,
-            subrows=None,
+            sub_rows=None,
             title=None,
             title_align='center',
             expand=False):
 
         renderable = PropTable(rows)
 
-        if subrows:
-            subpanels = [
+        if sub_rows:
+            sub_panels = [
                 PropPanel(r, title=t, title_align='left', expand=True)
-                for t, r in subrows
+                for t, r in sub_rows
             ]
-            renderable = RenderGroup(renderable, *subpanels)
+            renderable = RenderGroup(renderable, *sub_panels)
 
         super().__init__(
             renderable,
@@ -70,8 +68,8 @@ class ComparisonTable(Table):
 
 
 def print_probe(format_, streams, metadata=None):
-    subrows = [['Meta', metadata]] if metadata else None
-    print(PropPanel(format_, subrows, 'Format'))
+    sub_rows = [['Meta', metadata]] if metadata else None
+    print(PropPanel(format_, sub_rows, 'Format'))
 
     for i, stream in enumerate(streams):
         print()
