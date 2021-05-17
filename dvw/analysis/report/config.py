@@ -1,4 +1,6 @@
+import operator
 from dataclasses import dataclass
+from functools import reduce
 from itertools import combinations, product
 from typing import Dict, Any, Type, List
 
@@ -25,10 +27,14 @@ class Validator(cerberus.Validator):
         return self.__validate_type_list_or_single(x, isstr)
 
     def _validate_type_integers(self, x):
-        return self.__validate_type_list_or_single(x, isint) or self.__validate_type_range(x, isint)
+        return self.__validate_type_list_or_single(
+            x, isint
+        ) or self.__validate_type_range(x, isint)
 
     def _validate_type_numbers(self, x):
-        return self.__validate_type_list_or_single(x, isnum) or self.__validate_type_range(x, isnum)
+        return self.__validate_type_list_or_single(
+            x, isnum
+        ) or self.__validate_type_range(x, isnum)
 
     def _validate_type_wavelets(self, x):
         return self.__validate_type_list_or_single(x, lambda v: v in wavelist())
@@ -120,7 +126,15 @@ class Validator(cerberus.Validator):
         return self._normalize_coerce_aslist(x)
 
     def _normalize_coerce_dwtsub(self, x):
-        return self.__ascombinations(x, WaveletSubband)
+        if isdict(x) and contains(x, "values", "min-length", "max-length"):
+            combs = []
+            values, min_len, max_len = x["values"], x["min-length"], x["max-length"]
+            values = list(map(WaveletSubband, values))
+            for i in range(min_len, max_len + 1):
+                combs.extend(combinations(values, i))
+            return combs
+        values = self._normalize_coerce_aslist(x)
+        return [[WaveletSubband(v)] for v in values]
 
     def _normalize_coerce_winpos(self, x):
         return self._normalize_coerce_aslist(x, WindowPosition)
@@ -146,20 +160,6 @@ class Validator(cerberus.Validator):
         if type_:
             x = list(map(type_, x))
         return x
-
-    def __ascombinations(self, x, type_=None):
-        if isdict(x) and contains(x, "values", "min-length", "max-length"):
-            combs = []
-            values, min_len, max_len = x["values"], x["min-length"], x["max-length"]
-            if type_:
-                values = list(map(type_, values))
-            for i in range(min_len, max_len + 1):
-                combs.extend(combinations(values, i))
-            return combs
-        values = self._normalize_coerce_aslist(x)
-        if type_:
-            values = list(map(type_, values))
-        return values
 
 
 @dataclass
@@ -198,43 +198,30 @@ class ClassHolder:
     class_: Type
     params: Dict[str, List[Any]]
 
+    @property
+    def total(self) -> int:
+        return reduce(operator.mul, map(len, self.params.values()))
+
     def __iter__(self):
         keys = self.params.keys()
         values = self.params.values()
         for v in product(*values):
             params = dict(zip(keys, v))
-            yield self.class_(**params)
+            yield self.class_(**params), params
 
     @staticmethod
     def from_dict(data, name2class):
-        return [
-            ClassHolder(name2class(k), v)
-            for k, v in data.items()
-        ]
-
-
-@dataclass
-class AnalysisHolder:
-    video: str
-    watermark: WatermarkHolder
-    algorithm: ClassHolder
-    attacks: List[ClassHolder]
-    video_metrics: List[VideoMetric]
-    watermark_metrics: List[WatermarkMetric]
+        return [ClassHolder(name2class(k), v) for k, v in data.items()]
 
 
 @dataclass
 class AnalysisKit:
+    algorithms: List[ClassHolder]
     videos: List[str]
     watermarks: List[WatermarkHolder]
-    algorithms: List[ClassHolder]
     attacks: List[ClassHolder]
     video_metrics: List[VideoMetric]
     watermark_metrics: List[WatermarkMetric]
-
-    def __iter__(self):
-        for p in product(self.videos, self.watermarks, self.algorithms):
-            yield AnalysisHolder(*p, self.attacks, self.video_metrics, self.watermark_metrics)
 
     @staticmethod
     def from_dict(data: Dict[str, Any]) -> "AnalysisKit":
@@ -253,12 +240,8 @@ class AnalysisKit:
             watermark_metrics = data["metrics"].get("watermark")
 
         return AnalysisKit(
-            videos,
-            watermarks,
-            algorithms_,
-            attacks_,
-            video_metrics,
-            watermark_metrics)
+            algorithms_, videos, watermarks, attacks_, video_metrics, watermark_metrics
+        )
 
 
 def config2kit(path: str) -> AnalysisKit:
@@ -304,10 +287,10 @@ _SCHEMA = {
                 "type": ["strings", "dict"],
                 "schema": {
                     "path": {"required": True, "type": "string"},
-                    "width": {"type": "integer"}
-                }
-            }
-        }
+                    "width": {"type": "integer"},
+                },
+            },
+        },
     },
     "algorithms": {
         "type": "dict",
@@ -320,8 +303,8 @@ _SCHEMA = {
                     "subbands": asenum("dwtsub"),
                     "position": asenum("winpos"),
                     "window-size": integers(min=3, rename="window_size"),
-                    "emphasis": asenum("emphasis")
-                }
+                    "emphasis": asenum("emphasis"),
+                },
             },
             "dwt-dct-even-odd-differential": {
                 "type": "dict",
@@ -333,8 +316,8 @@ _SCHEMA = {
                     "area": numbers(min=0, max=1),
                     "alpha": numbers(min=0),
                     "repeats": integers(min=1),
-                    "emphasis": asenum("emphasis")
-                }
+                    "emphasis": asenum("emphasis"),
+                },
             },
             "dwt-svd-mean-over-window-edges": {
                 "type": "dict",
@@ -344,18 +327,15 @@ _SCHEMA = {
                     "subbands": asenum("dwtsub"),
                     "window-size": integers(min=3, rename="window_size"),
                     "alpha": numbers(min=0),
-                    "emphasis": asenum("emphasis")
-                }
-            }
-        }
+                    "emphasis": asenum("emphasis"),
+                },
+            },
+        },
     },
     "metrics": {
         "type": "dict",
         "required": False,
-        "schema": {
-            "video": asenum("vidmetric"),
-            "watermark": asenum("wmmetric")
-        }
+        "schema": {"video": asenum("vidmetric"), "watermark": asenum("wmmetric")},
     },
     "attacks": {
         "type": "dict",
@@ -364,10 +344,7 @@ _SCHEMA = {
             "flip": asenum("flipaxis"),
             "resize": {
                 "type": "dict",
-                "schema": {
-                    "height": integers(min=0),
-                    "width": integers(min=0)
-                }
+                "schema": {"height": integers(min=0), "width": integers(min=0)},
             },
             "crop": {
                 "type": "dict",
@@ -375,8 +352,8 @@ _SCHEMA = {
                     "y": integers(min=0),
                     "x": integers(min=0),
                     "height": integers(min=0),
-                    "width": integers(min=0)
-                }
+                    "width": integers(min=0),
+                },
             },
             "fill": {
                 "type": "dict",
@@ -385,18 +362,18 @@ _SCHEMA = {
                     "x": integers(min=0),
                     "height": integers(min=0),
                     "width": integers(min=0),
-                    "value": integers(min=0, max=255)
-                }
+                    "value": integers(min=0, max=255),
+                },
             },
             "rotate": asenum("rotang"),
             "gaussian": {
                 "type": "dict",
-                "schema": {
-                    "std": numbers(min=0),
-                    "area": numbers(min=0, max=1)
-                }
+                "schema": {"std": numbers(min=0), "area": numbers(min=0, max=1)},
             },
-            "salt-and-pepper": numbers(min=0, max=1)
-        }
-    }
+            "salt-and-pepper": {
+                "type": "dict",
+                "schema": {"area": numbers(min=0, max=1)},
+            },
+        },
+    },
 }

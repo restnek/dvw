@@ -237,7 +237,8 @@ def frame2wavelet(wavelet, level, *subbands):
         ChannelFilter(0),
         Normalize(255),
         ToWavelet(wavelet, level),
-        WaveletFilter(*subbands))
+        WaveletFilter(*subbands),
+    )
 
 
 def frame2dwt_stack(wavelet, level, position, *subbands):
@@ -254,14 +255,13 @@ def frame2dwt_dct(wavelet, level, *subbands):
         Every(
             ToZigzagOrder(),
             EvenOddDecomposition(),
-            Every(
-                ToCosineTransform(),
-                Reshape(-1))))
+            Every(ToCosineTransform(), Reshape(-1)),
+        ),
+    )
 
 
 def frame2dwt_svd(wavelet, level, *subbands):
     return Pipe(
         frame2wavelet(wavelet, level, *subbands),
-        Every(
-            SingularValueDecomposition(),
-            ItemFilter(1)))
+        Every(SingularValueDecomposition(), ItemFilter(1)),
+    )

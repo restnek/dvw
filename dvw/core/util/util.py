@@ -15,7 +15,7 @@ __all__ = [
     "tuple2list",
     "aslist",
     "enum_values",
-    "alower"
+    "alower",
 ]
 
 
@@ -24,13 +24,10 @@ def bit2sign(b):
 
 
 def around(iterable, precise):
-    return [
-        round(x, precise) if type(x) == float else x
-        for x in iterable
-    ]
+    return [round(x, precise) if type(x) == float else x for x in iterable]
 
 
-def asplit(iterable, separator=':', max_split=2):
+def asplit(iterable, separator=":", max_split=2):
     return dict(x.split(separator, max_split) for x in iterable)
 
 

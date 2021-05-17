@@ -45,7 +45,7 @@ class WindowMedian(Method):
             for j in range(0, len(r) - (self.window_size - 1), self.window_size):
                 if not watermark_reader.available():
                     return domain, embedded
-                window = r[j:j+self.window_size].T
+                window = r[j : j + self.window_size].T
                 window, amount = self.submethod.embed(window, watermark_reader)
                 embedded += amount
 
@@ -58,7 +58,7 @@ class WindowMedian(Method):
             for j in range(0, len(r) - (self.window_size - 1), self.window_size):
                 if quantity < 1:
                     return extracted
-                window = np.transpose(r[j:j+self.window_size])
+                window = np.transpose(r[j : j + self.window_size])
                 amount = self.submethod.extract(window, watermark_writer, quantity)
                 extracted += amount
                 quantity -= amount
@@ -103,7 +103,7 @@ class EvenOddDifferential(Method):
         for i in range(start, end - (self.repeats - 1), self.repeats):
             if not watermark_reader.available():
                 break
-            windows = domain[:, :, i:i+self.repeats]
+            windows = domain[:, :, i : i + self.repeats]
             windows, amount = self.submethod.embed(windows, watermark_reader)
             embedded += amount
 
@@ -117,7 +117,7 @@ class EvenOddDifferential(Method):
         for i in range(start, end - (self.repeats - 1), self.repeats):
             if quantity < 1:
                 break
-            windows = domain[:, :, i:i+self.repeats]
+            windows = domain[:, :, i : i + self.repeats]
             amount = self.submethod.extract(windows, watermark_writer, quantity)
             extracted += amount
             quantity -= amount
@@ -169,7 +169,7 @@ class MeanOverWindowEdges(Method):
         for i in range(0, domain.shape[1] - (self.window_size - 1), self.window_size):
             if not watermark_reader.available():
                 break
-            windows = domain[:, i:i+self.window_size]
+            windows = domain[:, i : i + self.window_size]
             windows, amount = self.submethod.embed(windows, watermark_reader)
             embedded += amount
 
@@ -182,7 +182,7 @@ class MeanOverWindowEdges(Method):
         for i in range(0, domain.shape[1] - (self.window_size - 1), self.window_size):
             if quantity < 1:
                 break
-            windows = domain[:, i:i+self.window_size]
+            windows = domain[:, i : i + self.window_size]
             amount = self.submethod.extract(windows, watermark_writer, quantity)
             extracted += amount
             quantity -= amount
@@ -264,7 +264,9 @@ class Emphasis(Enum):
     ROBUSTNESS = ("robustness", RobustnessEmphasis)
     CAPACITY = ("capacity", CapacityEmphasis)
 
-    def __new__(cls, value: str, class_: Callable[[BitManipulator], Method]) -> "Emphasis":
+    def __new__(
+        cls, value: str, class_: Callable[[BitManipulator], Method]
+    ) -> "Emphasis":
         obj = object().__new__(cls)
         obj._value_ = value
         obj.create = class_

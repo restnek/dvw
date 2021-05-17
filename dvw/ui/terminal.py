@@ -7,12 +7,7 @@ from rich.text import Text
 
 class PropPanel(Panel):
     def __init__(
-        self,
-        rows,
-        sub_rows=None,
-        title=None,
-        title_align="center",
-        expand=False
+        self, rows, sub_rows=None, title=None, title_align="center", expand=False
     ) -> None:
         renderable = PropTable(rows)
 
@@ -24,19 +19,15 @@ class PropPanel(Panel):
             renderable = RenderGroup(renderable, *sub_panels)
 
         super().__init__(
-            renderable,
-            title=title,
-            title_align=title_align,
-            expand=expand)
+            renderable, title=title, title_align=title_align, expand=expand
+        )
 
 
 class PropTable(Table):
     def __init__(self, rows):
         super().__init__(
-            box=box.MINIMAL,
-            show_header=False,
-            show_edge=False,
-            expand=False)
+            box=box.MINIMAL, show_header=False, show_edge=False, expand=False
+        )
 
         for r in rows:
             super().add_row(*map(str, r))
@@ -45,19 +36,12 @@ class PropTable(Table):
 class ComparisonPanel(Panel):
     def __init__(self, headers, rows, title=None, title_align="center"):
         table = ComparisonTable(headers, rows)
-        super().__init__(
-            table,
-            title=title,
-            title_align=title_align,
-            expand=False)
+        super().__init__(table, title=title, title_align=title_align, expand=False)
 
 
 class ComparisonTable(Table):
     def __init__(self, headers, rows):
-        super().__init__(
-            box=box.MINIMAL,
-            show_edge=False,
-            expand=False)
+        super().__init__(box=box.MINIMAL, show_edge=False, expand=False)
 
         super().add_column(style="bold")
         for h in headers:

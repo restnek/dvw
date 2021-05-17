@@ -83,7 +83,9 @@ class WatermarkEmbedder(VideoTunnel):
         self.statistics.end_time = time()
         self.statistics.full_watermark = not embedding_suite.workable()
 
-        self.notify(EmbedEvent.AFTER_EMBEDDING, statistics=self.statistics.shallow_copy())
+        self.notify(
+            EmbedEvent.AFTER_EMBEDDING, statistics=self.statistics.shallow_copy()
+        )
         return self.statistics
 
     def _notify_embedding(self, event):
@@ -91,7 +93,8 @@ class WatermarkEmbedder(VideoTunnel):
             event,
             position=self.position,
             total=self.frames,
-            embedded=self.statistics.embedded)
+            embedded=self.statistics.embedded,
+        )
 
 
 class ExtractEvent(Enum):
@@ -160,7 +163,4 @@ class BlindWatermarkExtractor(Observable):
         return self.method.extract(domain, watermark_writer, quantity)
 
     def _notify_extracting(self, event, statistics):
-        self.notify(
-            event,
-            total=statistics.total,
-            position=statistics.extracted)
+        self.notify(event, total=statistics.total, position=statistics.extracted)

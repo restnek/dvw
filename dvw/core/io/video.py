@@ -77,7 +77,7 @@ class VideoTunnel(AutoCloseable, Observable):
         output_path: str,
         codec: str,
         fps: Optional[int] = None,
-        shape=None  # TODO: add typing
+        shape=None,  # TODO: add typing
     ):
         super().__init__()
         self.reader = VideoReader(input_path)
@@ -85,7 +85,8 @@ class VideoTunnel(AutoCloseable, Observable):
             output_path,
             codec_code(codec),
             fps or self.reader.fps,
-            shape2shape(self.reader.shape, shape)[::-1])
+            shape2shape(self.reader.shape, shape)[::-1],
+        )
 
     def close(self) -> None:
         self.reader.close()
@@ -124,11 +125,7 @@ class VideoTunnel(AutoCloseable, Observable):
         return copied
 
     def _notify_copy(self, event: Any, copied: int) -> None:
-        self.notify(
-            event,
-            position=self.position,
-            total=self.frames,
-            copied=copied)
+        self.notify(event, position=self.position, total=self.frames, copied=copied)
 
 
 def codec_code(codec: str) -> int:

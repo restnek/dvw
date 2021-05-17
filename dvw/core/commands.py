@@ -1,8 +1,16 @@
+from typing import Dict, Any, Iterable
+
 import click
 from click import IntRange, Choice, FloatRange
 from pywt import wavelist
 
-from . import algorithms
+from .algorithms import (
+    DwtWindowMedian,
+    Algorithm,
+    DwtDctEvenOddDifferential,
+    DwtSvdMeanOverWindowEdges,
+)
+from .core import EmbeddingStatistics, ExtractingStatistics
 from .io import WatermarkType
 from .methods import WindowPosition, Emphasis
 from .transforms import WaveletSubband
@@ -60,7 +68,19 @@ from .util.click import (
 @click.help_option("-h", "--help", help="Show this message and exit")
 @click.pass_context
 def embed(ctx, **kwargs):
-    update_context(ctx, **kwargs, mode=algorithms.Mode.EMBED)
+    update_context(ctx, **kwargs, handler=_embed)
+
+
+def _embed(
+    algorithm: Algorithm,
+    input_path: str,
+    output_path: str,
+    watermark_path: str,
+    watermark_type: WatermarkType,
+    **kwargs: Any
+) -> EmbeddingStatistics:
+    with watermark_type.reader(watermark_path, **kwargs) as watermark_reader:
+        return algorithm.embed(input_path, output_path, watermark_reader)
 
 
 @click.group(
@@ -104,7 +124,19 @@ def embed(ctx, **kwargs):
 @click.help_option("-h", "--help", help="Show this message and exit")
 @click.pass_context
 def extract(ctx, **kwargs):
-    update_context(ctx, **kwargs, mode=algorithms.Mode.EXTRACT)
+    update_context(ctx, **kwargs, handler=_extract)
+
+
+def _extract(
+    algorithm: Algorithm,
+    input_path: str,
+    watermark_path: str,
+    watermark_type: WatermarkType,
+    quantity: int,
+    **kwargs: Any
+) -> ExtractingStatistics:
+    with watermark_type.writer(watermark_path, **kwargs) as watermark_writer:
+        return algorithm.extract(input_path, watermark_writer, quantity)
 
 
 @click.command(help="DWT window median", short_help="DWT window median")
@@ -140,9 +172,21 @@ def extract(ctx, **kwargs):
 )
 @click.help_option("-h", "--help", help="Show this message and exit")
 @click.pass_obj
-def dwt_window_median(group_args, **kwargs):
-    result = algorithms.dwt_window_median(**group_args, **kwargs)
-    print(result)
+def dwt_window_median(
+    group_args: Dict[str, Any],
+    wavelet: str,
+    level: int,
+    subbands: Iterable[WaveletSubband],
+    position: WindowPosition,
+    window_size: int,
+    emphasis: Emphasis,
+    **kwargs: Any
+) -> None:
+    algorithm = DwtWindowMedian(
+        wavelet, level, subbands, position, window_size, emphasis
+    )
+    statistics = group_args.pop("handler")(algorithm, **group_args, **kwargs)
+    print(statistics)
 
 
 @click.command(
@@ -187,9 +231,23 @@ def dwt_window_median(group_args, **kwargs):
 )
 @click.help_option("-h", "--help", help="Show this message and exit")
 @click.pass_obj
-def dwt_dct_even_odd_differential(group_args, **kwargs):
-    result = algorithms.dwt_dct_even_odd_differential(**group_args, **kwargs)
-    print(result)
+def dwt_dct_even_odd_differential(
+    group_args: Dict[str, Any],
+    wavelet: str,
+    level: int,
+    subbands: Iterable[WaveletSubband],
+    offset: float,
+    area: float,
+    repeats: int,
+    alpha: float,
+    emphasis: Emphasis,
+    **kwargs: Any
+):
+    algorithm = DwtDctEvenOddDifferential(
+        wavelet, level, subbands, offset, area, repeats, alpha, emphasis
+    )
+    statistics = group_args.pop("handler")(algorithm, **group_args, **kwargs)
+    print(statistics)
 
 
 @click.command(
@@ -223,9 +281,21 @@ def dwt_dct_even_odd_differential(group_args, **kwargs):
 )
 @click.help_option("-h", "--help", help="Show this message and exit")
 @click.pass_obj
-def dwt_svd_mean_over_window_edges(group_args, **kwargs):
-    result = algorithms.dwt_svd_mean_over_window_edges(**group_args, **kwargs)
-    print(result)
+def dwt_svd_mean_over_window_edges(
+    group_args: Dict[str, Any],
+    wavelet: str,
+    level: int,
+    subbands: Iterable[WaveletSubband],
+    window_size: int,
+    alpha: float,
+    emphasis: Emphasis,
+    **kwargs: Any
+):
+    algorithm = DwtSvdMeanOverWindowEdges(
+        wavelet, level, subbands, window_size, alpha, emphasis
+    )
+    statistics = group_args.pop("handler")(algorithm, **group_args, **kwargs)
+    print(statistics)
 
 
 embed.add_command(dwt_window_median)

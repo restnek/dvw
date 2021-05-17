@@ -1,106 +1,195 @@
+import dataclasses
+import json
 import os.path
 from abc import ABC, abstractmethod
-from typing import Optional, List
+from typing import List, Iterable, Any, Dict, Optional
+import shutil
 
 from dvw.analysis.metrics import MetricValue
-from dvw.analysis.report.util import create_path
-from dvw.core.core import EmbeddingStatistics, ExtractingStatistics
-from dvw.core.util import isstr
+from dvw.analysis.report.config import WatermarkHolder
+from dvw.analysis.report.util import create_path, filename
+from dvw.core.core import ExtractingStatistics, EmbeddingStatistics
 
 
 class Report(ABC):
     @abstractmethod
-    def resolve_path(
-        self,
-        path: str,
-        algorithm_name: Optional[str] = None,
-        attack_name: Optional[str] = None
-    ) -> str:
-        pass
-
-    @abstractmethod
-    def add_embedding_result(
-        self,
-        statistics: EmbeddingStatistics,
-        metric_values: Optional[List[MetricValue]] = None
+    def add_sources(
+        self, video_path: List[str], watermark_holders: List[WatermarkHolder]
     ) -> None:
         pass
 
     @abstractmethod
-    def add_extracting_result(
+    def new_algorithm(self, algorithm: str) -> None:
+        pass
+
+    @abstractmethod
+    def new_experiment(self, params: Dict[str, Any]) -> None:
+        pass
+
+    @abstractmethod
+    def new_assets(self) -> None:
+        pass
+
+    @abstractmethod
+    def new_attack(self, attack: str) -> None:
+        pass
+
+    @abstractmethod
+    def add_statistics(
         self,
-        statistics: ExtractingStatistics,
-        metric_values: Optional[List[MetricValue]] = None
+        embedding_statistics: EmbeddingStatistics,
+        embedding_metrics: Optional[List[MetricValue]],
+        extracting_statistics: ExtractingStatistics,
+        extracting_metrics: Optional[List[MetricValue]],
     ) -> None:
         pass
 
     @abstractmethod
-    def add_attack_result(
+    def add_attack_statistics(
         self,
-        statistics: ExtractingStatistics,
-        metric_values: Optional[List[MetricValue]] = None
+        extracting_statistics: ExtractingStatistics,
+        extracting_metrics: Optional[List[MetricValue]],
+        params: Dict[str, Any],
     ) -> None:
+        pass
+
+    @abstractmethod
+    def resolve_path(self, path: str) -> str:
         pass
 
 
 class HtmlReport(Report):
-    def __init__(self, report_path: str, experiment_folder: str = "exp") -> None:
+    def __init__(
+        self,
+        report_path: str,
+        experiment_folder: str = "exp",
+        assets_folder: str = "assets",
+        result_filename: str = "result.json",
+    ) -> None:
         create_path(report_path)
         self.report_path = report_path
         self.experiment_folder = experiment_folder
+        self.assets_folder = assets_folder
+        self.result_filename = result_filename
 
+        self.sources = {}
+        self.sources_id = 1
         self.current_algorithm = None
-        self.experiment_cnt = 0
+        self.current_experiment = 0
+        self.current_assets = 0
+        self.current_statistics = {}
+        self.current_attack = ""
+        self.current_attack_id = 0
+        self.current_path = self.report_path
 
-    def resolve_path(
-        self,
-        path: str,
-        algorithm_name: Optional[str] = None,
-        attack_name: Optional[str] = None
-    ) -> str:
-        filename = os.path.split(path)[1]
-        parts = (
+    def add_sources(
+        self, video_paths: Iterable[str], watermark_holders: Iterable[WatermarkHolder]
+    ) -> None:
+        create_path(self.report_path, self.assets_folder)
+        self._add_source_path(video_paths)
+        self._add_source_path(h.path for h in watermark_holders)
+
+    def _add_source_path(self, paths: Iterable[str]) -> None:
+        for p in paths:
+            name, extension = os.path.splitext(filename(p))
+            self.sources[p] = self.sources_id
+            copied_path = os.path.join(
+                self.report_path,
+                self.assets_folder,
+                f"{name}_{self.sources_id}{extension}",
+            )
+            shutil.copy2(p, copied_path)
+            self.sources_id += 1
+
+    def new_algorithm(self, algorithm: str) -> None:
+        self.current_path = create_path(self.report_path, algorithm)
+        self.current_algorithm = algorithm
+        self.current_experiment = 0
+        self.current_assets = 0
+        self.current_statistics = {}
+        self.current_attack = ""
+        self.current_attack_id = 0
+
+    def new_experiment(self, params: Dict[str, Any]) -> None:
+        self.current_experiment += 1
+        self.current_assets = 0
+        self.current_statistics = {}
+        self.current_attack = ""
+        self.current_attack_id = 0
+
+        self.current_path = create_path(
             self.report_path,
-            algorithm_name,
-            self.experiment_folder + str(self.cnt),
-            attack_name)
+            self.current_algorithm,
+            self.experiment_folder + str(self.current_experiment),
+        )
 
-        path = os.path.join(*filter(isstr, parts))
-        create_path(path)
+    def new_assets(self) -> None:
+        self.current_assets += 1
+        self.current_statistics = {}
+        self.current_attack = ""
+        self.current_attack_id = 0
 
-        return os.path.join(path, filename)
+        self.current_path = create_path(
+            self.report_path,
+            self.current_algorithm,
+            self.experiment_folder + str(self.current_experiment),
+            self.assets_folder + str(self.current_assets),
+        )
 
-    def new_algorithm(self, algorithm_name):
-        self.current_algorithm = algorithm_name
-        self._restore_state()
+    def new_attack(self, attack: str) -> None:
+        self.current_attack = attack
+        self.current_attack_id = 0
 
-    def _restore_state(self):
-        pass
-
-    def new_experiment(self):
-        pass  # self._init_experiment()
-
-    def add_embedding_result(
+    def add_statistics(
         self,
-        statistics: EmbeddingStatistics,
-        metric_values: Optional[List[MetricValue]] = None
+        embedding_statistics: EmbeddingStatistics,
+        embedding_metrics: Optional[List[MetricValue]],
+        extracting_statistics: ExtractingStatistics,
+        extracting_metrics: Optional[List[MetricValue]],
     ) -> None:
-        pass
-        # self.cnt += 1
-        # self.experiment[]
-        # print(statistics)
-        # print(metric_values)
+        self.current_statistics["embedding"] = dataclasses.asdict(embedding_statistics)
+        self.current_statistics["extracting"] = dataclasses.asdict(
+            extracting_statistics
+        )
+        if embedding_metrics:
+            embedding_metrics = list(map(dataclasses.asdict, embedding_metrics))
+        if extracting_metrics:
+            extracting_metrics = list(map(dataclasses.asdict, extracting_metrics))
+        self.current_statistics["metrics"] = {
+            "video": embedding_metrics,
+            "watermark": extracting_metrics,
+        }
+        self._save_result(self.current_statistics)
 
-    def add_extracting_result(
+    def add_attack_statistics(
         self,
-        statistics: ExtractingStatistics,
-        metric_values: Optional[List[MetricValue]] = None
+        extracting_statistics: ExtractingStatistics,
+        extracting_metrics: Optional[List[MetricValue]],
+        params: Dict[str, Any],
     ) -> None:
-        pass
+        self.current_attack_id += 1
 
-    def add_attack_result(
-        self,
-        statistics: ExtractingStatistics,
-        metric_values: Optional[List[MetricValue]] = None
-    ) -> None:
-        pass
+        if extracting_metrics:
+            extracting_metrics = list(map(dataclasses.asdict, extracting_metrics))
+        attacks = self.current_statistics.setdefault("attacks", [])
+        attacks.append(
+            {
+                "extracting": dataclasses.asdict(extracting_statistics),
+                "metrics": extracting_metrics,
+                "params": params,
+            }
+        )
+        self._save_result(self.current_statistics)
+
+    def _save_result(self, value: Dict[str, Any]) -> None:
+        path = os.path.join(self.current_path, self.result_filename)
+        with open(path, "w") as file:
+            json.dump(value, file, default=str, indent=4)
+
+    def resolve_path(self, source: str) -> str:
+        source_id = self.sources[source]
+        name, extension = os.path.splitext(filename(source))
+        path = os.path.join(self.current_path, f"{name}_{source_id}")
+        if self.current_attack:
+            path += "_" + self.current_attack + str(self.current_attack_id)
+        return path + extension

@@ -76,7 +76,7 @@ class RandomBitReader(WatermarkBitGenerator):
 
 class BitFileReader(WatermarkBitReader, WatermarkBitBatchReader):
     def __init__(self, path: str, buffering: int = 4096) -> None:
-        self.file = open(path, 'rb', buffering)
+        self.file = open(path, "rb", buffering)
         self.buffer = 0
         self.eof = False
         self.current = 256
@@ -100,8 +100,8 @@ class BitFileReader(WatermarkBitReader, WatermarkBitBatchReader):
     def _update(self) -> None:
         if self.current > 7:
             byte_ = self.file.read(1)
-            self.buffer = int.from_bytes(byte_, 'big')
-            self.eof = (len(byte_) == 0)
+            self.buffer = int.from_bytes(byte_, "big")
+            self.eof = len(byte_) == 0
             self.current = 0
 
     def read_all(self):  # TODO: add typing
@@ -111,7 +111,7 @@ class BitFileReader(WatermarkBitReader, WatermarkBitBatchReader):
 
 class BitFileWriter(WatermarkBitWriter):
     def __init__(self, path: str, buffering: int = 4096) -> None:
-        self.file = open(path, 'wb', buffering)
+        self.file = open(path, "wb", buffering)
         self.buffer = 0
         self.current = 0
 
@@ -122,13 +122,13 @@ class BitFileWriter(WatermarkBitWriter):
         self.file.flush()
 
     def write_bit(self, bit: int) -> None:
-        self.buffer |= (bit << self.current)
+        self.buffer |= bit << self.current
         self.current += 1
         self._update()
 
     def _update(self) -> None:
         if self.current > 7:
-            self.file.write(self.buffer.to_bytes(1, 'big'))
+            self.file.write(self.buffer.to_bytes(1, "big"))
             self.buffer = 0
             self.current = 0
 
@@ -194,20 +194,22 @@ class BWImageWriter(WatermarkBitWriter):
 
 class WatermarkType(Enum):
     BIT_FILE = (
-        'bit-file',
+        "bit-file",
         lambda f, **a: BitFileReader(f),
-        lambda f, **a: BitFileWriter(f))
+        lambda f, **a: BitFileWriter(f),
+    )
     BW_IMAGE = (
-        'bw-image',
-        lambda f, **a: BWImageReader(f, a['width']),
-        lambda f, **a: BWImageWriter(f, a['width']))
+        "bw-image",
+        lambda f, **a: BWImageReader(f, a["width"]),
+        lambda f, **a: BWImageWriter(f, a["width"]),
+    )
 
     def __new__(
         cls,
         value: str,
         reader_class: Callable[[str, Any], WatermarkBitReader],
-        writer_class: Callable[[str, Any], WatermarkBitWriter]
-    ) -> 'WatermarkType':
+        writer_class: Callable[[str, Any], WatermarkBitWriter],
+    ) -> "WatermarkType":
         obj = object().__new__(cls)
         obj._value_ = value
         obj.reader = reader_class

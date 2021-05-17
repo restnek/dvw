@@ -2,8 +2,8 @@ import cv2
 import numpy as np
 from skimage.metrics import structural_similarity
 
-from .base import BaseMetric, MetricValue, Comparator
 from dvw.core.io import PairVideoReader
+from .base import BaseMetric, MetricValue, Comparator
 
 
 def ssim(frame1, frame2):  # TODO: add typing
@@ -11,8 +11,8 @@ def ssim(frame1, frame2):  # TODO: add typing
 
 
 class VideoMetric(BaseMetric):
-    PSNR = ('psnr', 'Peak signal-to-noise ratio', cv2.PSNR, 'db')
-    MSSIM = ('mssim', 'Mean structural similarity', ssim)
+    PSNR = ("psnr", "Peak signal-to-noise ratio", cv2.PSNR, "db")
+    MSSIM = ("mssim", "Mean structural similarity", ssim)
 
 
 class VideoComparator(Comparator):

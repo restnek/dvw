@@ -12,11 +12,6 @@ class IgnoreRequiredWithHelp(click.Group):
         return super().parse_args(ctx, args)
 
 
-# class Test(click.Command):
-#     def __init__(self, *args, **kwargs):
-#         super().__init__(*args, **kwargs)
-
-
 class EnumType(click.Choice):
     def __init__(self, enum, type_fn=None, by_name=False):
         choices = list(enum.__members__) if by_name else enum_values(enum)
@@ -51,9 +46,7 @@ def update_context(ctx, **kwargs):
 
 
 def default_help_context():
-    return {
-        "help_option_names": ["-h", "--help"]
-    }
+    return {"help_option_names": ["-h", "--help"]}
 
 
 def add_click_options(options):
@@ -61,4 +54,5 @@ def add_click_options(options):
         for option in reversed(options):
             func = option(func)
         return func
+
     return _add_options

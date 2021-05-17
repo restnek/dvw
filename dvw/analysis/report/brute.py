@@ -1,10 +1,11 @@
+from itertools import product
 from typing import List, Tuple, Optional
 
-from .config import AnalysisKit, AnalysisHolder, WatermarkHolder
+from .config import AnalysisKit, WatermarkHolder, ClassHolder
 from .report import Report
 from ..attacks.attacks import Attack
-from ..metrics import WatermarkMetric, MetricValue
-from ..metrics.video import VideoComparator, VideoMetric
+from ..metrics import MetricValue
+from ..metrics.video import VideoComparator
 from ...core.algorithms import Algorithm
 from ...core.core import ExtractingStatistics, EmbeddingStatistics
 
@@ -15,35 +16,54 @@ class BruteForce:
         self.precision = precision
 
     def start(self, report: Report) -> None:
-        for k in self.kit:
-            self._brute_algorithms(k, report)
+        report.add_sources(self.kit.videos, self.kit.watermarks)
+        for a in self.kit.algorithms:
+            report.new_algorithm(a.class_.__name__)
+            self._brute_algorithms(a, report)
 
-    def _brute_algorithms(self, analysis_holder: AnalysisHolder, report: Report) -> None:
-        for algorithm in analysis_holder.algorithm:
-            watermarked_video = report.resolve_path(analysis_holder.video, algorithm.name)
-            embedding_result = self._embed(
-                analysis_holder.video,
-                watermarked_video,
-                analysis_holder.watermark,
-                algorithm,
-                analysis_holder.video_metrics
-            )
-            report.add_embedding_result(*embedding_result)
+    def _brute_algorithms(self, algorithm_holder: ClassHolder, report: Report) -> None:
+        for a, params in algorithm_holder:
+            report.new_experiment(params)
+            self._brute_assets(a, report)
+
+    def _brute_assets(self, algorithm: Algorithm, report: Report) -> None:
+        for v, w in product(self.kit.videos, self.kit.watermarks):
+            report.new_assets()
+
+            watermarked_video = report.resolve_path(v)
+            embedding_result = self._embed(v, watermarked_video, w, algorithm)
 
             quantity = embedding_result[0].embedded
-            restored_watermark = report.resolve_path(
-                analysis_holder.watermark.path,
-                algorithm.name)
+            restored_watermark = report.resolve_path(w.path)
             extracting_result = self._extract(
-                watermarked_video,
-                restored_watermark,
-                analysis_holder.watermark,
-                algorithm,
-                quantity,
-                analysis_holder.watermark_metrics)
-            report.add_extracting_result(*extracting_result)
+                watermarked_video, restored_watermark, w, algorithm, quantity
+            )
 
-            # self._brute_attacks(analysis_holder, watermarked_video, algorithm, quantity, report)
+            report.add_statistics(*embedding_result, *extracting_result)
+
+            self._brute_attacks(watermarked_video, w, algorithm, report, quantity)
+
+    def _brute_attacks(
+        self,
+        watermarked_video: str,
+        watermark: WatermarkHolder,
+        algorithm: Algorithm,
+        report: Report,
+        quantity: int,
+    ) -> None:
+        for attack_holder in self.kit.attacks:
+            report.new_attack(attack_holder.class_.__name__)
+            for a, params in attack_holder:
+                restored_watermark = report.resolve_path(watermark.path)
+                extracting_result = self._extract(
+                    watermarked_video,
+                    restored_watermark,
+                    watermark,
+                    algorithm,
+                    quantity,
+                    a,
+                )
+                report.add_attack_statistics(*extracting_result, params)
 
     def _embed(
         self,
@@ -51,14 +71,13 @@ class BruteForce:
         output_path: str,
         watermark_holder: WatermarkHolder,
         algorithm: Algorithm,
-        video_metrics: List[VideoMetric]
     ) -> Tuple[EmbeddingStatistics, Optional[List[MetricValue]]]:
         with watermark_holder.reader() as watermark_reader:
             statistics = algorithm.embed(input_path, output_path, watermark_reader)
 
         metric_values = None
-        if video_metrics:
-            comparator = VideoComparator(self.precision, *video_metrics)
+        if self.kit.video_metrics:
+            comparator = VideoComparator(self.precision, *self.kit.video_metrics)
             metric_values = comparator.compare(input_path, output_path)
 
         return statistics, metric_values
@@ -70,40 +89,17 @@ class BruteForce:
         watermark_holder: WatermarkHolder,
         algorithm: Algorithm,
         quantity: int,
-        watermark_metrics: List[WatermarkMetric],
-        attack: Attack = None
+        attack: Attack = None,
     ) -> Tuple[ExtractingStatistics, Optional[List[MetricValue]]]:
         with watermark_holder.writer(output_path) as watermark_writer:
-            statistics = algorithm.extract(input_path, watermark_writer, quantity, attack)
+            statistics = algorithm.extract(
+                input_path, watermark_writer, quantity, attack
+            )
 
         metric_values = None
-        if watermark_metrics:
+        if self.kit.watermark_metrics:
             metric_values = watermark_holder.compare(
-                output_path,
-                self.precision,
-                watermark_metrics)
+                output_path, self.precision, self.kit.watermark_metrics
+            )
 
         return statistics, metric_values
-
-    def _brute_attacks(
-        self,
-        analysis_holder: AnalysisHolder,
-        watermarked_video: str,
-        algorithm: Algorithm,
-        quantity: int,
-        report: Report
-    ) -> None:
-        for attack_holder in analysis_holder.attacks:
-            for attack in attack_holder:
-                restored_watermark = report.resolve_path(
-                    analysis_holder.watermark.path,
-                    algorithm.name)  # remake
-                extracting_result = self._extract(
-                    watermarked_video,
-                    restored_watermark,
-                    analysis_holder.watermark,
-                    algorithm,
-                    quantity,
-                    analysis_holder.watermark_metrics,
-                    attack)
-                report.add_attack_result(*extracting_result)

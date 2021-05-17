@@ -56,7 +56,9 @@ class Flip(Attack):
 
 
 class Resize(Attack):
-    def __init__(self, width: Optional[int] = None, height: Optional[int] = None) -> None:
+    def __init__(
+        self, width: Optional[int] = None, height: Optional[int] = None
+    ) -> None:
         self.width = width
         self.height = height
 
@@ -82,7 +84,7 @@ class Crop(Attack):
 
     def handle(self, frame):  # TODO: add typing
         frame = np.array(frame)
-        return frame[self.y1:self.y2, self.x1:self.x2]
+        return frame[self.y1 : self.y2, self.x1 : self.x2]
 
 
 class Fill(Attack):
@@ -95,7 +97,7 @@ class Fill(Attack):
 
     def handle(self, frame):  # TODO: add typing
         frame = np.array(frame)
-        frame[self.y1:self.y2, self.x1:self.x2] = self.value
+        frame[self.y1 : self.y2, self.x1 : self.x2] = self.value
         return frame
 
 
@@ -129,7 +131,7 @@ class Gaussian(Attack):
         return frame.clip(0, 255).astype(np.uint8)
 
 
-class SaltAndPepper(FrameHandler):
+class SaltAndPepper(Attack):
     def __init__(self, area: float = 1) -> None:
         self.area = area
 
@@ -140,8 +142,8 @@ class SaltAndPepper(FrameHandler):
         amount = int(self.area * total)
 
         flat_idx = np.random.choice(total, amount, False)
-        flat_salt = flat_idx[:len(flat_idx) // 2]
-        flat_pepper = flat_idx[len(flat_idx) // 2:]
+        flat_salt = flat_idx[: len(flat_idx) // 2]
+        flat_pepper = flat_idx[len(flat_idx) // 2 :]
 
         salt = np.unravel_index(flat_salt, (height, width))
         pepper = np.unravel_index(flat_pepper, (height, width))
@@ -156,16 +158,10 @@ def attack_video(
     attack: Attack,
     input_path: str,
     output_path: str,
-    codec: str = 'mp4v',
-    fps: Optional[int] = None
+    codec: str = "mp4v",
+    fps: Optional[int] = None,
 ) -> None:
-    with VideoTunnel(
-        input_path,
-        output_path,
-        codec,
-        fps,
-        attack.shape
-    ) as video_tunnel:
+    with VideoTunnel(input_path, output_path, codec, fps, attack.shape) as video_tunnel:
         video_tunnel.transfer_all(attack)
 
 
@@ -180,5 +176,5 @@ _ATTACKS = {
     "fill": Fill,
     "rotate": Rotate,
     "gaussian": Gaussian,
-    "salt-and-pepper": SaltAndPepper
+    "salt-and-pepper": SaltAndPepper,
 }

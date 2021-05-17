@@ -1,12 +1,12 @@
 from abc import abstractmethod, ABC
-from typing import Type, List, Dict
+from typing import Type, Dict, Iterable
 
 from .core import (
     WatermarkEmbedder,
     BlindWatermarkExtractor,
     FrameEmbeddingSuite,
     EmbeddingStatistics,
-    ExtractingStatistics
+    ExtractingStatistics,
 )
 from .io import VideoReader, WatermarkBitReader, WatermarkBitWriter
 from .methods import (
@@ -18,9 +18,16 @@ from .methods import (
     MeanOverWindowEdgesBitManipulator,
     WindowPosition,
     Emphasis,
-    Method
+    Method,
 )
-from .transforms import frame2dwt_dct, frame2dwt_svd, frame2dwt_stack, WaveletSubband, Transformation, Pipe
+from .transforms import (
+    frame2dwt_dct,
+    frame2dwt_svd,
+    frame2dwt_stack,
+    WaveletSubband,
+    Transformation,
+    Pipe,
+)
 
 
 class Algorithm(ABC):
@@ -43,9 +50,11 @@ class Algorithm(ABC):
         input_path: str,
         output_path: str,
         watermark_reader: WatermarkBitReader,
-        codec: str = "mp4v"
+        codec: str = "mp4v",
     ) -> EmbeddingStatistics:
-        embedding_suite = FrameEmbeddingSuite(self.transformation, self.method, watermark_reader)
+        embedding_suite = FrameEmbeddingSuite(
+            self.transformation, self.method, watermark_reader
+        )
         with WatermarkEmbedder(input_path, output_path, codec) as embedder:
             return embedder.embed(embedding_suite)
 
@@ -54,7 +63,7 @@ class Algorithm(ABC):
         input_path: str,
         watermark_writer: WatermarkBitWriter,
         quantity: int,
-        preparer: Transformation = None
+        preparer: Transformation = None,
     ) -> ExtractingStatistics:
         transformation = self.transformation
         if preparer:
@@ -70,10 +79,10 @@ class DwtWindowMedian(Algorithm):
         self,
         wavelet: str,
         level: int,
-        subbands: List[WaveletSubband],
+        subbands: Iterable[WaveletSubband],
         position: WindowPosition,
         window_size: int,
-        emphasis: Emphasis
+        emphasis: Emphasis,
     ):
         bit_manipulator = WindowMedianBitManipulator()
         submethod = emphasis.create(bit_manipulator)
@@ -94,12 +103,12 @@ class DwtDctEvenOddDifferential(Algorithm):
         self,
         wavelet: str,
         level: int,
-        subbands: List[WaveletSubband],
+        subbands: Iterable[WaveletSubband],
         offset: float,
         area: float,
         repeats: int,
         alpha: float,
-        emphasis: Emphasis
+        emphasis: Emphasis,
     ):
         bit_manipulator = EvenOddDifferentialBitManipulator(alpha)
         submethod = emphasis.create(bit_manipulator)
@@ -120,10 +129,10 @@ class DwtSvdMeanOverWindowEdges(Algorithm):
         self,
         wavelet: str,
         level: int,
-        subbands: List[WaveletSubband],
+        subbands: Iterable[WaveletSubband],
         window_size: int,
         alpha: float,
-        emphasis: Emphasis
+        emphasis: Emphasis,
     ):
         bit_manipulator = MeanOverWindowEdgesBitManipulator(alpha)
         submethod = emphasis.create(bit_manipulator)
@@ -146,5 +155,5 @@ def name2class(name: str) -> Type[Algorithm]:
 _ALGORITHMS: Dict[str, Type[Algorithm]] = {
     "dwt-window-median": DwtWindowMedian,
     "dwt-dct-even-odd-differential": DwtDctEvenOddDifferential,
-    "dwt-svd-mean-over-window-edges": DwtSvdMeanOverWindowEdges
+    "dwt-svd-mean-over-window-edges": DwtSvdMeanOverWindowEdges,
 }

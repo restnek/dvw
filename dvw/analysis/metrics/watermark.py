@@ -13,16 +13,18 @@ def _ber(watermark_reader1, watermark_reader2, precision):  # TODO: add typing
     while watermark_reader1.available() and watermark_reader2.available():
         bit1 = watermark_reader1.read_bit()
         bit2 = watermark_reader2.read_bit()
-        errors += (bit1 != bit2)
+        errors += bit1 != bit2
         total += 1
 
     ber_ = 100 * ((errors / total) if total else 1)
     ber_ = round(ber_, precision)
-    values = [('Total', total), ('Errors', errors), ('BER', ber_)]
+    values = [("Total", total), ("Errors", errors), ("BER", ber_)]
     return MetricValue(WatermarkMetric.BER, values)
 
 
-def _normalized_correlation(watermark_reader1, watermark_reader2, precision):  # TODO: add typing
+def _normalized_correlation(
+    watermark_reader1, watermark_reader2, precision
+):  # TODO: add typing
     a = watermark_reader1.read_all()
     b = watermark_reader2.read_all()
 
@@ -34,8 +36,8 @@ def _normalized_correlation(watermark_reader1, watermark_reader2, precision):  #
 
 
 class WatermarkMetric(BaseMetric):
-    BER = ('ber', 'Bit error rate', _ber, '%')
-    NC = ('nc', 'Normalized correlation', _normalized_correlation)
+    BER = ("ber", "Bit error rate", _ber, "%")
+    NC = ("nc", "Normalized correlation", _normalized_correlation)
 
 
 class WatermarkComparator(Comparator):
@@ -44,11 +46,7 @@ class WatermarkComparator(Comparator):
         self.metrics = metrics or list(WatermarkMetric)
 
     def compare(
-        self,
-        path1: str,
-        path2: str,
-        watermark_type: WatermarkType,
-        **kwargs: Any
+        self, path1: str, path2: str, watermark_type: WatermarkType, **kwargs: Any
     ):  # TODO: add typing
         return [
             self._calculate_metric(path1, path2, watermark_type, m, **kwargs)
@@ -63,6 +61,11 @@ class WatermarkComparator(Comparator):
         metric: WatermarkMetric,
         **kwargs: Any
     ):  # TODO: add typing
-        with watermark_type.reader(path1, **kwargs) as watermark_reader1, \
-                watermark_type.reader(path2, **kwargs) as watermark_reader2:
-            return metric.calculate(watermark_reader1, watermark_reader2, self.precision)
+        with watermark_type.reader(
+            path1, **kwargs
+        ) as watermark_reader1, watermark_type.reader(
+            path2, **kwargs
+        ) as watermark_reader2:
+            return metric.calculate(
+                watermark_reader1, watermark_reader2, self.precision
+            )
