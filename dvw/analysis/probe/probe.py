@@ -1,4 +1,4 @@
-import ntpath
+import os
 from dataclasses import dataclass
 from datetime import timedelta
 from typing import Callable, Any, List, Optional
@@ -30,14 +30,14 @@ class VideoProbe:
     metadata: Optional[List[ProbeValue]]
 
 
-def probe(path):
+def probe(path: str) -> VideoProbe:
     info = ffmpeg.probe(path)
     format_, metadata = _parse_format(info['format'])
     streams = _parse_all_streams(info['streams'])
     return VideoProbe(format_, streams, metadata)
 
 
-def _parse_format(format_):
+def _parse_format(format_):  # TODO: add typing
     metadata = None
     if 'tags' in format_:
         metadata = [ProbeValue(k, v) for k, v in format_['tags'].items()]
@@ -45,36 +45,36 @@ def _parse_format(format_):
     return format_, metadata
 
 
-def _parse_all_streams(streams):
+def _parse_all_streams(streams):  # TODO: add typing
     return [
         _parse_all_fields(s, _STREAM_FIELDS[s['codec_type']])
         for s in streams
     ]
 
 
-def _parse_all_fields(data, fields):
+def _parse_all_fields(data, fields):  # TODO: add typing
     return [_parse_field(data, f) for f in fields if f.name in data]
 
 
-def _parse_field(data, field):
+def _parse_field(data, field):  # TODO: add typing
     value = data[field.name]
     value = field.handler(value) if field.handler else value
     return ProbeValue(field.label, value)
 
 
-def _parse_filename(path):
-    return ntpath.split(path)[1]
+def _parse_filename(path: str) -> str:
+    return os.path.split(path)[1]
 
 
-def _parse_size(size):
+def _parse_size(size):  # TODO: add typing
     return size2human(float(size))
 
 
-def _parse_bitrate(bitrate):
+def _parse_bitrate(bitrate):  # TODO: add typing
     return bitrate2human(float(bitrate))
 
 
-def _parse_duration(duration):
+def _parse_duration(duration):  # TODO: add typing
     return timedelta(seconds=int(float(duration)))
 
 

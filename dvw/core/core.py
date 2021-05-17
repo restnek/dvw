@@ -50,7 +50,7 @@ class FrameEmbeddingSuite(FrameHandler):
 
 
 class WatermarkEmbedder(VideoTunnel):
-    def __init__(self, input_path, output_path, codec='mp4v'):
+    def __init__(self, input_path, output_path, codec="mp4v"):
         super().__init__(input_path, output_path, codec)
         self.statistics = EmbeddingStatistics(self.frames)
 

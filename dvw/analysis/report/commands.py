@@ -1,9 +1,8 @@
-from pprint import pprint
-
 import click
 
 from dvw.analysis.report.brute import BruteForce
 from dvw.analysis.report.config import config2kit
+from dvw.analysis.report.report import HtmlReport
 
 
 @click.group(help='Generate report')
@@ -22,10 +21,6 @@ def report():
     type=click.Path(exists=True),
     help='Config file with settings')
 @click.option(
-    '-s', '--session',
-    type=click.Path(exists=True),
-    help='Session path')
-@click.option(
     '-o', '--output', 'output_path',
     required=True,
     type=click.Path(),
@@ -33,10 +28,12 @@ def report():
 @click.help_option(
     '-h', '--help',
     help='Show this message and exit')
-def start(config, **kwargs):
+def start(config, output_path):
+    precision = 4
     kit = config2kit(config)
-    bf = BruteForce(kit)
-    bf.start()
+    report_ = HtmlReport(output_path)
+    bf = BruteForce(kit, precision)
+    bf.start(report_)
 
 
 @report.command()

@@ -1,9 +1,12 @@
+from typing import Any
+
 import numpy as np
 
 from .base import BaseMetric, MetricValue, Comparator
+from ...core.io import WatermarkType
 
 
-def _ber(watermark_reader1, watermark_reader2, precision):
+def _ber(watermark_reader1, watermark_reader2, precision):  # TODO: add typing
     errors = 0
     total = 0
 
@@ -19,7 +22,7 @@ def _ber(watermark_reader1, watermark_reader2, precision):
     return MetricValue(WatermarkMetric.BER, values)
 
 
-def _normalized_correlation(watermark_reader1, watermark_reader2, precision):
+def _normalized_correlation(watermark_reader1, watermark_reader2, precision):  # TODO: add typing
     a = watermark_reader1.read_all()
     b = watermark_reader2.read_all()
 
@@ -36,17 +39,30 @@ class WatermarkMetric(BaseMetric):
 
 
 class WatermarkComparator(Comparator):
-    def __init__(self, precision, *metrics):
+    def __init__(self, precision: int, *metrics: WatermarkMetric) -> None:
         super().__init__(precision)
         self.metrics = metrics or list(WatermarkMetric)
 
-    def compare(self, path1, path2, watermark_type, **kwargs):
+    def compare(
+        self,
+        path1: str,
+        path2: str,
+        watermark_type: WatermarkType,
+        **kwargs: Any
+    ):  # TODO: add typing
         return [
             self._calculate_metric(path1, path2, watermark_type, m, **kwargs)
             for m in self.metrics
         ]
 
-    def _calculate_metric(self, path1, path2, watermark_type, metric, **kwargs):
+    def _calculate_metric(
+        self,
+        path1: str,
+        path2: str,
+        watermark_type: WatermarkType,
+        metric: WatermarkMetric,
+        **kwargs: Any
+    ):  # TODO: add typing
         with watermark_type.reader(path1, **kwargs) as watermark_reader1, \
                 watermark_type.reader(path2, **kwargs) as watermark_reader2:
             return metric.calculate(watermark_reader1, watermark_reader2, self.precision)

@@ -11,7 +11,7 @@ class AutoCloseable(ABC):
         self.close()
 
     @abstractmethod
-    def close(self):
+    def close(self) -> None:
         pass
 
 

@@ -20,6 +20,7 @@ class IgnoreRequiredWithHelp(click.Group):
 class EnumType(click.Choice):
     def __init__(self, enum, type_fn=None, by_name=False):
         choices = list(enum.__members__) if by_name else enum_values(enum)
+        choices = list(map(str, choices))
         super().__init__(choices)
         self.enum = enum
         self.type_fn = type_fn

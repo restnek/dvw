@@ -9,8 +9,8 @@ from .analysis.probe.commands import probe
 
 @click.group()
 @click.help_option(
-    '-h', '--help',
-    help='Show this message and exit')
+    "-h", "--help",
+    help="Show this message and exit")
 def cli():
     pass
 

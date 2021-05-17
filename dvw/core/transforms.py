@@ -178,7 +178,7 @@ class EvenOddDecomposition(Transformation):
         return domain[::2], domain[1::2]
 
     def restore(self, domain, memory):
-        return np.vstack((domain[0], domain[1])).ravel(order='F')
+        return np.vstack((domain[0], domain[1])).ravel(order="F")
 
 
 class SingularValueDecomposition(Transformation):

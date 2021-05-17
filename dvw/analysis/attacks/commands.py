@@ -19,9 +19,9 @@ from ...core.util.click import IgnoreRequiredWithHelp, update_context, default_h
     required=True,
     type=click.Path(),
     help='Output video file')
-# @click.help_option(
-#     '-h', '--help',
-#     help='Show this message and exit')
+@click.help_option(
+    '-h', '--help',
+    help='Show this message and exit')
 @click.pass_context
 def attack(ctx, **kwargs):
     update_context(ctx, **kwargs)
@@ -65,11 +65,7 @@ def flip(group_args, axis):
     help='Show this message and exit')
 @click.pass_obj
 def crop(group_args, y, x, height, width):
-    attack_video(
-        Crop(y, x, height, width),
-        height=height,
-        width=width,
-        **group_args)
+    attack_video(Crop(y, x, height, width), **group_args)
 
 
 @attack.command()
@@ -111,7 +107,7 @@ def fill(group_args, y, x, height, width, value):
     '--angle',
     required=True,
     type=EnumType(RotateAngle, int),
-    help='Flip axis')
+    help='Rotate angle')
 @click.help_option(
     '-h', '--help',
     help='Show this message and exit')

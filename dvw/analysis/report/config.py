@@ -175,7 +175,6 @@ class WatermarkHolder:
         return self.type.writer(path, **self.params)
 
     def compare(self, path, precision, metrics):
-        print(metrics)
         comparator = WatermarkComparator(precision, *metrics)
         return comparator.compare(self.path, path, self.type, **self.params)
 
@@ -195,7 +194,7 @@ class WatermarkHolder:
 
 
 @dataclass
-class AlgorithmHolder:
+class ClassHolder:
     class_: Type
     params: Dict[str, List[Any]]
 
@@ -207,57 +206,45 @@ class AlgorithmHolder:
             yield self.class_(**params)
 
     @staticmethod
-    def from_dict(data):
+    def from_dict(data, name2class):
         return [
-            AlgorithmHolder(algorithms.name2class(k), v)
+            ClassHolder(name2class(k), v)
             for k, v in data.items()
         ]
 
 
 @dataclass
-class AttackHolder:
-    class_: Type
-    params: Dict[str, List[Any]]
-
-    def __iter__(self):
-        keys = self.params.keys()
-        values = self.params.values()
-        for v in product(values):
-            params = dict(zip(keys, v))
-            yield self.class_(**params)
-
-    @staticmethod
-    def from_dict(data):
-        return [
-            AttackHolder(attacks.name2class(k), v)
-            for k, v in data.items()
-        ]
+class AnalysisHolder:
+    video: str
+    watermark: WatermarkHolder
+    algorithm: ClassHolder
+    attacks: List[ClassHolder]
+    video_metrics: List[VideoMetric]
+    watermark_metrics: List[WatermarkMetric]
 
 
 @dataclass
 class AnalysisKit:
     videos: List[str]
     watermarks: List[WatermarkHolder]
-    algorithms: List[AlgorithmHolder]
-    attacks: List[AttackHolder]
+    algorithms: List[ClassHolder]
+    attacks: List[ClassHolder]
     video_metrics: List[VideoMetric]
     watermark_metrics: List[WatermarkMetric]
 
     def __iter__(self):
-        values = [self.videos, self.watermarks, self.algorithms, self.attacks]
-        values = [(v if v else [None]) for v in values]
-        for p in product(*values):
-            yield *p, self.video_metrics, self.watermark_metrics
+        for p in product(self.videos, self.watermarks, self.algorithms):
+            yield AnalysisHolder(*p, self.attacks, self.video_metrics, self.watermark_metrics)
 
     @staticmethod
-    def from_dict(data):
+    def from_dict(data: Dict[str, Any]) -> "AnalysisKit":
         videos = data["videos"]
         watermarks = WatermarkHolder.from_dict(data["watermarks"])
 
-        algorithms_ = AlgorithmHolder.from_dict(data["algorithms"])
+        algorithms_ = ClassHolder.from_dict(data["algorithms"], algorithms.name2class)
         attacks_ = None
         if "attacks" in data:
-            attacks_ = AttackHolder.from_dict(data["attacks"])
+            attacks_ = ClassHolder.from_dict(data["attacks"], attacks.name2class)
 
         video_metrics = None
         watermark_metrics = None
@@ -274,7 +261,7 @@ class AnalysisKit:
             watermark_metrics)
 
 
-def config2kit(path):
+def config2kit(path: str) -> AnalysisKit:
     with open(path) as config_file:
         config = yaml.safe_load(config_file)
 

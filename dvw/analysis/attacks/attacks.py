@@ -1,19 +1,22 @@
+from abc import ABC
 from enum import Enum
+from typing import Optional, Type
 
 import cv2
 import numpy as np
 
 from dvw.core.io import VideoTunnel
 from dvw.core.io.video import FrameHandler
+from dvw.core.transforms import Transformation
 from dvw.core.util import shape2shape
 
 
 class FlipAxis(Enum):
-    HORIZONTAL = ('hr', 1)
-    VERTICAL = ('vr', 0)
-    BOTH = ('both', -1)
+    HORIZONTAL = ("hr", 1)
+    VERTICAL = ("vr", 0)
+    BOTH = ("both", -1)
 
-    def __new__(cls, value, code):
+    def __new__(cls, value: str, code: int) -> "FlipAxis":
         obj = object().__new__(cls)
         obj._value_ = value
         obj.code = code
@@ -25,71 +28,97 @@ class RotateAngle(Enum):
     ROTATE_180 = (180, 1)
     ROTATE_90_COUNTERCLOCKWISE = (270, 2)
 
-    def __new__(cls, value, code):
+    def __new__(cls, value: int, code: int) -> "RotateAngle":
         obj = object().__new__(cls)
         obj._value_ = value
         obj.code = code
         return obj
 
 
-class Flip(FrameHandler):
-    def __init__(self, axis: FlipAxis):
+class Attack(Transformation, FrameHandler, ABC):
+    @property
+    def shape(self):  # TODO: add typing
+        return None
+
+    def transform(self, domain, memory):  # TODO: add typing
+        return self.handle(domain)
+
+    def restore(self, domain, memory):  # TODO: add typing
+        return domain
+
+
+class Flip(Attack):
+    def __init__(self, axis: FlipAxis) -> None:
         self.axis = axis
 
-    def handle(self, frame):
+    def handle(self, frame):  # TODO: add typing
         return cv2.flip(frame, self.axis.code)
 
 
-class Resize(FrameHandler):
-    def __init__(self, width=None, height=None):
+class Resize(Attack):
+    def __init__(self, width: Optional[int] = None, height: Optional[int] = None) -> None:
         self.width = width
         self.height = height
 
-    def handle(self, frame):
-        shape = shape2shape(np.shape(frame), self.height, self.width)
+    @property
+    def shape(self):  # TODO: add typing
+        return self.height, self.width
+
+    def handle(self, frame):  # TODO: add typing
+        shape = shape2shape(np.shape(frame), (self.height, self.width))
         return cv2.resize(frame, shape[::-1])
 
 
-class Crop(FrameHandler):
-    def __init__(self, y, x, height, width):
+class Crop(Attack):
+    def __init__(self, y: int, x: int, height: int, width: int) -> None:
         self.y1 = y
         self.y2 = y + height
         self.x1 = x
         self.x2 = x + width
 
-    def handle(self, frame):
+    @property
+    def shape(self):  # TODO: add typing
+        return self.y2 - self.y1, self.x2 - self.x1
+
+    def handle(self, frame):  # TODO: add typing
         frame = np.array(frame)
         return frame[self.y1:self.y2, self.x1:self.x2]
 
 
-class Fill(FrameHandler):
-    def __init__(self, y, x, height, width, value):
+class Fill(Attack):
+    def __init__(self, y: int, x: int, height: int, width: int, value: int) -> None:
         self.y1 = y
         self.y2 = y + height
         self.x1 = x
         self.x2 = x + width
         self.value = value
 
-    def handle(self, frame):
+    def handle(self, frame):  # TODO: add typing
         frame = np.array(frame)
         frame[self.y1:self.y2, self.x1:self.x2] = self.value
         return frame
 
 
-class Rotate(FrameHandler):
-    def __init__(self, angle: RotateAngle):
+class Rotate(Attack):
+    def __init__(self, angle: RotateAngle) -> None:
         self.angle = angle
 
-    def handle(self, frame):
+    @property
+    def shape(self):  # TODO: add typing
+        if RotateAngle.ROTATE_180 != self.angle:
+            return -1
+        return None
+
+    def handle(self, frame):  # TODO: add typing
         return cv2.rotate(frame, self.angle.code)
 
 
-class Gaussian(FrameHandler):
-    def __init__(self, std=1, area=1):
+class Gaussian(Attack):
+    def __init__(self, std: float = 1, area: float = 1) -> None:
         self.std = std
         self.area = area
 
-    def handle(self, frame):
+    def handle(self, frame):  # TODO: add typing
         frame = np.array(frame, dtype=float)
         if self.area >= 1:
             frame.flat += np.random.normal(0, self.std, frame.size)
@@ -101,10 +130,10 @@ class Gaussian(FrameHandler):
 
 
 class SaltAndPepper(FrameHandler):
-    def __init__(self, area=1):
+    def __init__(self, area: float = 1) -> None:
         self.area = area
 
-    def handle(self, frame):
+    def handle(self, frame):  # TODO: add typing
         frame = frame.copy()
         height, width = frame.shape[:2]
         total = height * width
@@ -124,26 +153,23 @@ class SaltAndPepper(FrameHandler):
 
 
 def attack_video(
-    attack,
-    input_path,
-    output_path,
-    codec='mp4v',
-    fps=None,
-    height=None,
-    width=None,
-):
+    attack: Attack,
+    input_path: str,
+    output_path: str,
+    codec: str = 'mp4v',
+    fps: Optional[int] = None
+) -> None:
     with VideoTunnel(
         input_path,
         output_path,
         codec,
         fps,
-        height,
-        width
+        attack.shape
     ) as video_tunnel:
         video_tunnel.transfer_all(attack)
 
 
-def name2class(name):
+def name2class(name: str) -> Type[Attack]:
     return _ATTACKS.get(name)
 
 

@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 from enum import Enum
+from typing import Callable
 
 import numpy as np
 
@@ -27,12 +28,12 @@ class BitManipulator(ABC):
 
 
 class WindowPosition(Enum):
-    HORIZONTAL = 'hr'
-    VERTICAL = 'vr'
+    HORIZONTAL = "hr"
+    VERTICAL = "vr"
 
 
 class WindowMedian(Method):
-    def __init__(self, window_size: int, submethod: Method):
+    def __init__(self, window_size: int, submethod: Method) -> None:
         self.window_size = window_size
         self.submethod = submethod
 
@@ -132,7 +133,7 @@ class EvenOddDifferential(Method):
 
 
 class EvenOddDifferentialBitManipulator(BitManipulator):
-    def __init__(self, alpha):
+    def __init__(self, alpha: float) -> None:
         self.alpha = alpha
 
     def embed(self, domain, bit):
@@ -157,7 +158,7 @@ class EvenOddDifferentialBitManipulator(BitManipulator):
 
 
 class MeanOverWindowEdges(Method):
-    def __init__(self, window_size: int, submethod: Method):
+    def __init__(self, window_size: int, submethod: Method) -> None:
         self.window_size = window_size
         self.submethod = submethod
 
@@ -190,7 +191,7 @@ class MeanOverWindowEdges(Method):
 
 
 class MeanOverWindowEdgesBitManipulator(BitManipulator):
-    def __init__(self, alpha):
+    def __init__(self, alpha: float) -> None:
         self.alpha = alpha
 
     def embed(self, window, bit):
@@ -210,7 +211,7 @@ class MeanOverWindowEdgesBitManipulator(BitManipulator):
 
 
 class RobustnessEmphasis(Method):
-    def __init__(self, bit_manipulator):
+    def __init__(self, bit_manipulator: BitManipulator) -> None:
         self.bit_manipulator = bit_manipulator
 
     def embed(self, domains, watermark_reader):
@@ -234,7 +235,7 @@ class RobustnessEmphasis(Method):
 
 
 class CapacityEmphasis(Method):
-    def __init__(self, bit_manipulator):
+    def __init__(self, bit_manipulator: BitManipulator) -> None:
         self.bit_manipulator = bit_manipulator
 
     def embed(self, domains, watermark_reader):
@@ -260,10 +261,10 @@ class CapacityEmphasis(Method):
 
 
 class Emphasis(Enum):
-    ROBUSTNESS = ('robustness', RobustnessEmphasis)
-    CAPACITY = ('capacity', CapacityEmphasis)
+    ROBUSTNESS = ("robustness", RobustnessEmphasis)
+    CAPACITY = ("capacity", CapacityEmphasis)
 
-    def __new__(cls, value, class_):
+    def __new__(cls, value: str, class_: Callable[[BitManipulator], Method]) -> "Emphasis":
         obj = object().__new__(cls)
         obj._value_ = value
         obj.create = class_

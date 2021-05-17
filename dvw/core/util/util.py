@@ -11,6 +11,7 @@ __all__ = [
     "isstr",
     "isdict",
     "isarray",
+    "istuple",
     "tuple2list",
     "aslist",
     "enum_values",
@@ -49,14 +50,18 @@ def aslist(x):
     return [x]
 
 
-def shape2shape(shape, height=None, width=None):
-    if not width and not height:
-        return shape
+def shape2shape(old_shape, new_shape=None):
+    if new_shape == -1:
+        return old_shape[::-1]
 
+    if not new_shape or (not new_shape[0] and not new_shape[1]):
+        return old_shape
+
+    height, width = new_shape
     if not height:
-        height = width * shape[0] // shape[1]
+        height = width * old_shape[0] // old_shape[1]
     elif not width:
-        width = height * shape[1] // shape[0]
+        width = height * old_shape[1] // old_shape[0]
 
     return height, width
 
@@ -81,9 +86,13 @@ def isstr(x):
     return isinstance(x, str)
 
 
-def isdict(x):
-    return isinstance(x, dict)
+def istuple(x):
+    return isinstance(x, tuple)
 
 
 def isarray(x):
     return isinstance(x, (list, tuple, np.ndarray))
+
+
+def isdict(x):
+    return isinstance(x, dict)
