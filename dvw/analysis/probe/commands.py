@@ -1,9 +1,7 @@
-from pprint import pprint
-
 import click
 
 from .probe import probe as probe_
-from ...ui.terminal import print_properties, print_probe
+from ...ui.terminal import print_probe
 
 
 @click.command(
@@ -15,5 +13,3 @@ from ...ui.terminal import print_properties, print_probe
 def probe(file):
     video_probe = probe_(file)
     print_probe(video_probe)
-    # format_, streams, metadata = probe.probe(file)
-    # terminal.print_probe(format_, streams, metadata)

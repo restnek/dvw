@@ -1,7 +1,8 @@
 from abc import ABC, abstractmethod
 from enum import Enum
 from random import Random
-from typing import Optional, Union, AnyStr, Callable, Any
+from types import TracebackType
+from typing import Optional, Union, AnyStr, Callable, Any, Iterable, Type, SupportsInt
 
 import cv2
 import numpy as np
@@ -21,7 +22,7 @@ class WatermarkBitReader(AutoCloseable, ABC):
 
 class WatermarkBitBatchReader(AutoCloseable, ABC):
     @abstractmethod
-    def read_all(self):  # TODO: add typing
+    def read_all(self) -> Iterable[int]:
         pass
 
 
@@ -41,7 +42,12 @@ class WatermarkBitGenerator(WatermarkBitReader, ABC):
 
 
 class WatermarkBitWriter(AutoCloseable, ABC):
-    def __exit__(self, exc_type, exc_val, exc_tb) -> None:  # TODO: add typing
+    def __exit__(
+        self,
+        exc_type: Optional[Type[BaseException]],
+        exc_val: Optional[BaseException],
+        exc_tb: Optional[TracebackType],
+    ) -> None:
         self.flush()
         self.close()
 
@@ -55,9 +61,9 @@ class WatermarkBitWriter(AutoCloseable, ABC):
 
 
 class ConstantBitReader(WatermarkBitGenerator):
-    def __init__(self, bit, size: Optional[int] = None) -> None:  # TODO: add typing
+    def __init__(self, bit: SupportsInt, size: Optional[int] = None) -> None:
         super().__init__(size)
-        self.bit = int(bool(bit))
+        self.bit = int(bit) % 2
 
     def read_bit(self) -> int:
         self._reduce_size()
@@ -65,7 +71,7 @@ class ConstantBitReader(WatermarkBitGenerator):
 
 
 class RandomBitReader(WatermarkBitGenerator):
-    def __init__(self, seed: Union[int, float, AnyStr], size: int = None) -> None:
+    def __init__(self, seed: Union[float, AnyStr], size: Optional[int] = None) -> None:
         super().__init__(size)
         self.generator = Random(seed)
 
@@ -104,7 +110,7 @@ class BitFileReader(WatermarkBitReader, WatermarkBitBatchReader):
             self.eof = len(byte_) == 0
             self.current = 0
 
-    def read_all(self):  # TODO: add typing
+    def read_all(self) -> Iterable[int]:
         self.eof = True
         return self.file.read()
 
@@ -134,7 +140,7 @@ class BitFileWriter(WatermarkBitWriter):
 
 
 class BWImageReader(WatermarkBitReader, WatermarkBitBatchReader):
-    def __init__(self, path: str, width: int = None) -> None:
+    def __init__(self, path: str, width: Optional[int] = None) -> None:
         self.buffer = self._open(path, width)
         self.width = width
         self.current = 0
@@ -166,7 +172,7 @@ class BWImageReader(WatermarkBitReader, WatermarkBitBatchReader):
         self.current += 1
         return bit
 
-    def read_all(self):
+    def read_all(self) -> Iterable[int]:
         self.current = len(self.buffer)
         return self.buffer
 

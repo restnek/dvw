@@ -1,10 +1,10 @@
-from abc import abstractmethod, ABC
-from typing import Type, Dict, Iterable
+from abc import ABC
+from typing import Type, Dict, Iterable, Optional
 
 from .core import (
     WatermarkEmbedder,
     BlindWatermarkExtractor,
-    FrameEmbeddingSuite,
+    FrameEmbeddingKit,
     EmbeddingStatistics,
     ExtractingStatistics,
 )
@@ -31,19 +31,9 @@ from .transforms import (
 
 
 class Algorithm(ABC):
-    @property
-    @abstractmethod
-    def transformation(self) -> Transformation:
-        pass
-
-    @property
-    @abstractmethod
-    def method(self) -> Method:
-        pass
-
-    @property
-    def name(self) -> str:
-        return self.__class__.__name__
+    def __init__(self, transformation: Transformation, method: Method) -> None:
+        self.transformation = transformation
+        self.method = method
 
     def embed(
         self,
@@ -52,7 +42,7 @@ class Algorithm(ABC):
         watermark_reader: WatermarkBitReader,
         codec: str = "mp4v",
     ) -> EmbeddingStatistics:
-        embedding_suite = FrameEmbeddingSuite(
+        embedding_suite = FrameEmbeddingKit(
             self.transformation, self.method, watermark_reader
         )
         with WatermarkEmbedder(input_path, output_path, codec) as embedder:
@@ -63,7 +53,7 @@ class Algorithm(ABC):
         input_path: str,
         watermark_writer: WatermarkBitWriter,
         quantity: int,
-        preparer: Transformation = None,
+        preparer: Optional[Transformation] = None,
     ) -> ExtractingStatistics:
         transformation = self.transformation
         if preparer:
@@ -86,16 +76,9 @@ class DwtWindowMedian(Algorithm):
     ):
         bit_manipulator = WindowMedianBitManipulator()
         submethod = emphasis.create(bit_manipulator)
-        self._method = WindowMedian(window_size, submethod)
-        self._transformation = frame2dwt_stack(wavelet, level, position, *subbands)
-
-    @property
-    def transformation(self) -> Transformation:
-        return self._transformation
-
-    @property
-    def method(self) -> Method:
-        return self._method
+        method = WindowMedian(window_size, submethod)
+        transformation = frame2dwt_stack(wavelet, level, position, *subbands)
+        super().__init__(transformation, method)
 
 
 class DwtDctEvenOddDifferential(Algorithm):
@@ -112,16 +95,9 @@ class DwtDctEvenOddDifferential(Algorithm):
     ):
         bit_manipulator = EvenOddDifferentialBitManipulator(alpha)
         submethod = emphasis.create(bit_manipulator)
-        self._method = EvenOddDifferential(offset, area, repeats, submethod)
-        self._transformation = frame2dwt_dct(wavelet, level, *subbands)
-
-    @property
-    def transformation(self) -> Transformation:
-        return self._transformation
-
-    @property
-    def method(self) -> Method:
-        return self._method
+        method = EvenOddDifferential(offset, area, repeats, submethod)
+        transformation = frame2dwt_dct(wavelet, level, *subbands)
+        super().__init__(transformation, method)
 
 
 class DwtSvdMeanOverWindowEdges(Algorithm):
@@ -136,16 +112,9 @@ class DwtSvdMeanOverWindowEdges(Algorithm):
     ):
         bit_manipulator = MeanOverWindowEdgesBitManipulator(alpha)
         submethod = emphasis.create(bit_manipulator)
-        self._method = MeanOverWindowEdges(window_size, submethod)
-        self._transformation = frame2dwt_svd(wavelet, level, *subbands)
-
-    @property
-    def transformation(self) -> Transformation:
-        return self._transformation
-
-    @property
-    def method(self) -> Method:
-        return self._method
+        method = MeanOverWindowEdges(window_size, submethod)
+        transformation = frame2dwt_svd(wavelet, level, *subbands)
+        super().__init__(transformation, method)
 
 
 def name2class(name: str) -> Type[Algorithm]:

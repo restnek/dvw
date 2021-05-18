@@ -1,29 +1,37 @@
 from abc import ABC, abstractmethod
 from enum import Enum
-from typing import Callable
+from typing import Callable, Any, Tuple
 
 import numpy as np
 
+from dvw.core.io import WatermarkBitReader, WatermarkBitWriter
 from dvw.core.util import bit2sign
 
 
 class Method(ABC):
     @abstractmethod
-    def embed(self, domain, watermark_reader):
+    def embed(
+        self, domain: Any, watermark_reader: WatermarkBitReader  # TODO: fix Any typing
+    ) -> Tuple[Any, int]:
         pass
 
     @abstractmethod
-    def extract(self, domain, watermark_writer, quantity):
+    def extract(
+        self,
+        domain: Any,  # TODO: fix Any typing
+        watermark_writer: WatermarkBitWriter,
+        quantity: int,
+    ) -> int:
         pass
 
 
 class BitManipulator(ABC):
     @abstractmethod
-    def embed(self, domain, bit):
+    def embed(self, domain: Any, bit: int) -> Any:  # TODO: fix Any typing
         pass
 
     @abstractmethod
-    def extract(self, domain):
+    def extract(self, domain: Any) -> int:  # TODO: fix Any typing
         pass
 
 
@@ -37,7 +45,9 @@ class WindowMedian(Method):
         self.window_size = window_size
         self.submethod = submethod
 
-    def embed(self, domain, watermark_reader):
+    def embed(
+        self, domain: np.ndarray, watermark_reader: WatermarkBitReader
+    ) -> Tuple[np.ndarray, int]:
         embedded = 0
         domain = np.asarray(domain)
 
@@ -51,7 +61,9 @@ class WindowMedian(Method):
 
         return domain, embedded
 
-    def extract(self, domain, watermark_writer, quantity):
+    def extract(
+        self, domain: np.ndarray, watermark_writer: WatermarkBitWriter, quantity: int
+    ) -> int:
         extracted = 0
 
         for r in domain:
@@ -67,7 +79,7 @@ class WindowMedian(Method):
 
 
 class WindowMedianBitManipulator(BitManipulator):
-    def embed(self, window, bit):
+    def embed(self, window: np.ndarray, bit: int) -> np.ndarray:
         imin, imax = window.argmin(), window.argmax()
 
         for i in range(len(window)):
@@ -76,7 +88,7 @@ class WindowMedianBitManipulator(BitManipulator):
 
         return window
 
-    def extract(self, window):
+    def extract(self, window: np.ndarray) -> int:
         cnt = 0
         imin, imax = window.argmin(), window.argmax()
 
@@ -89,13 +101,17 @@ class WindowMedianBitManipulator(BitManipulator):
 
 
 class EvenOddDifferential(Method):
-    def __init__(self, offset: float, area: float, repeats: int, submethod: Method):
+    def __init__(
+        self, offset: float, area: float, repeats: int, submethod: Method
+    ) -> None:
         self.offset = offset
         self.area = area
         self.repeats = repeats
         self.submethod = submethod
 
-    def embed(self, domain, watermark_reader):
+    def embed(
+        self, domain: np.ndarray, watermark_reader: WatermarkBitReader
+    ) -> Tuple[np.ndarray, int]:
         embedded = 0
         domain = np.asarray(domain)
         start, end = self._find_boundaries(domain[0])
@@ -109,7 +125,9 @@ class EvenOddDifferential(Method):
 
         return domain, embedded
 
-    def extract(self, domain, watermark_writer, quantity):
+    def extract(
+        self, domain: np.ndarray, watermark_writer: WatermarkBitWriter, quantity: int
+    ) -> int:
         extracted = 0
         domain = np.asarray(domain)
         start, end = self._find_boundaries(domain[0])
@@ -124,7 +142,7 @@ class EvenOddDifferential(Method):
 
         return extracted
 
-    def _find_boundaries(self, domain):
+    def _find_boundaries(self, domain: np.ndarray) -> Tuple[int, int]:
         even, odd = domain
         size = min(len(even), len(odd))
         start = int(self.offset * size)
@@ -136,7 +154,7 @@ class EvenOddDifferentialBitManipulator(BitManipulator):
     def __init__(self, alpha: float) -> None:
         self.alpha = alpha
 
-    def embed(self, domain, bit):
+    def embed(self, domain: np.ndarray, bit: int) -> np.ndarray:
         even, odd = domain
         bit = bit2sign(bit)
 
@@ -147,7 +165,7 @@ class EvenOddDifferentialBitManipulator(BitManipulator):
 
         return domain
 
-    def extract(self, domain):
+    def extract(self, domain: np.ndarray) -> int:
         cnt = 0
         even, odd = domain
 
@@ -162,7 +180,9 @@ class MeanOverWindowEdges(Method):
         self.window_size = window_size
         self.submethod = submethod
 
-    def embed(self, domain, watermark_reader):
+    def embed(
+        self, domain: np.ndarray, watermark_reader: WatermarkBitReader
+    ) -> Tuple[np.ndarray, int]:
         embedded = 0
         domain = np.asarray(domain)
 
@@ -175,7 +195,9 @@ class MeanOverWindowEdges(Method):
 
         return domain, embedded
 
-    def extract(self, domain, watermark_writer, quantity):
+    def extract(
+        self, domain: np.ndarray, watermark_writer: WatermarkBitWriter, quantity: int
+    ) -> int:
         extracted = 0
         domain = np.asarray(domain)
 
@@ -194,13 +216,13 @@ class MeanOverWindowEdgesBitManipulator(BitManipulator):
     def __init__(self, alpha: float) -> None:
         self.alpha = alpha
 
-    def embed(self, window, bit):
+    def embed(self, window: np.ndarray, bit: int) -> np.ndarray:
         bit = bit2sign(bit)
         sm = window[0] + window[-1]
         window[1:-1] = 0.5 * (sm + bit * self.alpha * sm)
         return window
 
-    def extract(self, window):
+    def extract(self, window: np.ndarray) -> int:
         cnt = 0
         avg = 0.5 * (window[0] + window[-1])
 
@@ -214,7 +236,9 @@ class RobustnessEmphasis(Method):
     def __init__(self, bit_manipulator: BitManipulator) -> None:
         self.bit_manipulator = bit_manipulator
 
-    def embed(self, domains, watermark_reader):
+    def embed(
+        self, domains: np.ndarray, watermark_reader: WatermarkBitReader
+    ) -> Tuple[np.ndarray, int]:
         bit = watermark_reader.read_bit()
 
         for d in domains:
@@ -222,7 +246,9 @@ class RobustnessEmphasis(Method):
 
         return domains, 1
 
-    def extract(self, domains, watermark_writer, quantity):
+    def extract(
+        self, domains: np.ndarray, watermark_writer: WatermarkBitWriter, quantity: int
+    ) -> int:
         cnt = 0
 
         for d in domains:
@@ -238,7 +264,9 @@ class CapacityEmphasis(Method):
     def __init__(self, bit_manipulator: BitManipulator) -> None:
         self.bit_manipulator = bit_manipulator
 
-    def embed(self, domains, watermark_reader):
+    def embed(
+        self, domains: np.ndarray, watermark_reader: WatermarkBitReader
+    ) -> Tuple[np.ndarray, int]:
         embedded = 0
         for d in domains:
             if not watermark_reader.available():
@@ -248,7 +276,9 @@ class CapacityEmphasis(Method):
             embedded += 1
         return domains, embedded
 
-    def extract(self, domains, watermark_writer, quantity):
+    def extract(
+        self, domains: np.ndarray, watermark_writer: WatermarkBitWriter, quantity: int
+    ) -> int:
         extracted = 0
         for d in domains:
             if quantity < 1:

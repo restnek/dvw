@@ -1,7 +1,7 @@
 from typing import Optional, Any, Dict, Iterable
 
 from rich import box, print
-from rich.align import AlignMethod
+from rich.align import AlignValues
 from rich.columns import Columns
 from rich.console import RenderGroup, RenderableType
 from rich.panel import Panel
@@ -17,7 +17,7 @@ class PropertyPanel(Panel):
         self,
         data: Dict[str, Any] = None,
         title: Optional[str] = None,
-        title_align: AlignMethod = "center",
+        title_align: AlignValues = "center",
         expand: bool = False,
     ) -> None:
         self.table = PropertyTable(data)

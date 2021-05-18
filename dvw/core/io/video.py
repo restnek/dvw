@@ -7,6 +7,7 @@ import numpy as np
 
 from ..util import shape2shape, istuple
 from ..util.base import AutoCloseable, Observable
+from ..util.types import Shape, FrameWithReturn
 
 
 class VideoReader(AutoCloseable):
@@ -29,7 +30,7 @@ class VideoReader(AutoCloseable):
         return int(self.video.get(cv2.CAP_PROP_FRAME_HEIGHT))
 
     @property
-    def shape(self) -> Tuple[int, int]:
+    def shape(self) -> Shape:
         return self.height, self.width
 
     @property
@@ -66,7 +67,7 @@ class VideoTunnelEvent(Enum):
 
 class FrameHandler(ABC):
     @abstractmethod
-    def handle(self, frame):  # TODO: add typing
+    def handle(self, frame) -> FrameWithReturn:
         pass
 
 
@@ -77,13 +78,13 @@ class VideoTunnel(AutoCloseable, Observable):
         output_path: str,
         codec: str,
         fps: Optional[int] = None,
-        shape=None,  # TODO: add typing
-    ):
+        shape: Optional[Shape] = None,
+    ) -> None:
         super().__init__()
         self.reader = VideoReader(input_path)
         self.writer = cv2.VideoWriter(
             output_path,
-            codec_code(codec),
+            codec2code(codec),
             fps or self.reader.fps,
             shape2shape(self.reader.shape, shape)[::-1],
         )
@@ -100,17 +101,17 @@ class VideoTunnel(AutoCloseable, Observable):
     def position(self) -> int:
         return self.reader.position
 
-    def transfer_all(self, frame_handler: FrameHandler) -> None:
-        while self.transfer(frame_handler)[0]:
+    def transfer_all(self, handler: FrameHandler) -> None:
+        while self.transfer(handler)[0]:
             pass
 
-    def transfer(self, frame_handler: FrameHandler):  # TODO: add typing
+    def transfer(self, handler: FrameHandler) -> Tuple[bool, Any]:
         success, frame = self.reader.read()
         if success:
-            result = frame_handler.handle(frame)
+            result = handler.handle(frame)
             frame = result[0] if istuple(result) else result
             self.writer.write(frame)
-            return success, *result
+            return (success, *result)
         return success, None
 
     def copy_frames(self) -> int:
@@ -128,5 +129,5 @@ class VideoTunnel(AutoCloseable, Observable):
         self.notify(event, position=self.position, total=self.frames, copied=copied)
 
 
-def codec_code(codec: str) -> int:
+def codec2code(codec: str) -> int:
     return cv2.VideoWriter_fourcc(*codec)

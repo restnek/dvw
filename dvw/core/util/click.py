@@ -1,10 +1,14 @@
+from enum import Enum
+from typing import List, Any, Optional, Callable, Type, Dict
+
 import click
+from click import Context, Parameter, Option
 
 from .util import enum_values
 
 
 class IgnoreRequiredWithHelp(click.Group):
-    def parse_args(self, ctx, args):
+    def parse_args(self, ctx: Context, args: List[str]) -> List[str]:
         is_help = any(h in args for h in ctx.help_option_names)
         if is_help:
             for param in self.params:
@@ -13,7 +17,12 @@ class IgnoreRequiredWithHelp(click.Group):
 
 
 class EnumType(click.Choice):
-    def __init__(self, enum, type_fn=None, by_name=False):
+    def __init__(
+        self,
+        enum: Type[Enum],
+        type_fn: Callable[[Any], Enum] = None,
+        by_name: bool = False,
+    ) -> None:
         choices = list(enum.__members__) if by_name else enum_values(enum)
         choices = list(map(str, choices))
         super().__init__(choices)
@@ -21,7 +30,9 @@ class EnumType(click.Choice):
         self.type_fn = type_fn
         self.by_name = by_name
 
-    def convert(self, value, param, ctx):
+    def convert(
+        self, value: Any, param: Optional[Parameter], ctx: Optional[Context]
+    ) -> Enum:
         enum_value = super().convert(value, param, ctx)
         if self.type_fn:
             enum_value = self.type_fn(enum_value)
@@ -40,16 +51,16 @@ def append_const(option, type_):
     return callback
 
 
-def update_context(ctx, **kwargs):
+def update_context(ctx: Context, **kwargs: Any) -> None:
     ctx.ensure_object(dict)
     ctx.obj.update(kwargs)
 
 
-def default_help_context():
+def default_help_context() -> Dict[str, Any]:
     return {"help_option_names": ["-h", "--help"]}
 
 
-def add_click_options(options):
+def add_click_options(options: List[Type[Option]]) -> Callable:
     def _add_options(func):
         for option in reversed(options):
             func = option(func)

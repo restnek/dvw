@@ -1,12 +1,17 @@
-from typing import Any
+from typing import Any, List
 
 import numpy as np
 
 from .base import BaseMetric, MetricValue, Comparator
-from ...core.io import WatermarkType
+from ...core.io import WatermarkType, WatermarkBitReader
+from ...core.io.watermark import WatermarkBitBatchReader
 
 
-def _ber(watermark_reader1, watermark_reader2, precision):  # TODO: add typing
+def _ber(
+    watermark_reader1: WatermarkBitReader,
+    watermark_reader2: WatermarkBitReader,
+    precision: int,
+) -> MetricValue:
     errors = 0
     total = 0
 
@@ -23,10 +28,12 @@ def _ber(watermark_reader1, watermark_reader2, precision):  # TODO: add typing
 
 
 def _normalized_correlation(
-    watermark_reader1, watermark_reader2, precision
-):  # TODO: add typing
-    a = watermark_reader1.read_all()
-    b = watermark_reader2.read_all()
+    watermark_reader1: WatermarkBitBatchReader,
+    watermark_reader2: WatermarkBitBatchReader,
+    precision: int,
+) -> MetricValue:
+    a = list(watermark_reader1.read_all())
+    b = list(watermark_reader2.read_all())
 
     a = (a - np.mean(a)) / (np.std(a) * len(a))
     b = (b - np.mean(b)) / (np.std(b))
@@ -47,7 +54,7 @@ class WatermarkComparator(Comparator):
 
     def compare(
         self, path1: str, path2: str, watermark_type: WatermarkType, **kwargs: Any
-    ):  # TODO: add typing
+    ) -> List[MetricValue]:
         return [
             self._calculate_metric(path1, path2, watermark_type, m, **kwargs)
             for m in self.metrics
@@ -60,7 +67,7 @@ class WatermarkComparator(Comparator):
         watermark_type: WatermarkType,
         metric: WatermarkMetric,
         **kwargs: Any
-    ):  # TODO: add typing
+    ) -> MetricValue:
         with watermark_type.reader(
             path1, **kwargs
         ) as watermark_reader1, watermark_type.reader(

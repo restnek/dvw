@@ -9,6 +9,7 @@ from dvw.core.io import VideoTunnel
 from dvw.core.io.video import FrameHandler
 from dvw.core.transforms import Transformation
 from dvw.core.util import shape2shape
+from dvw.core.util.types import ShapeParameters, Shape
 
 
 class FlipAxis(Enum):
@@ -37,13 +38,13 @@ class RotateAngle(Enum):
 
 class Attack(Transformation, FrameHandler, ABC):
     @property
-    def shape(self):  # TODO: add typing
+    def shape(self) -> ShapeParameters:
         return None
 
-    def transform(self, domain, memory):  # TODO: add typing
+    def transform(self, domain: np.ndarray, memory: list) -> np.ndarray:
         return self.handle(domain)
 
-    def restore(self, domain, memory):  # TODO: add typing
+    def restore(self, domain: np.ndarray, memory: list) -> np.ndarray:
         return domain
 
 
@@ -51,7 +52,7 @@ class Flip(Attack):
     def __init__(self, axis: FlipAxis) -> None:
         self.axis = axis
 
-    def handle(self, frame):  # TODO: add typing
+    def handle(self, frame: np.ndarray) -> np.ndarray:
         return cv2.flip(frame, self.axis.code)
 
 
@@ -63,10 +64,10 @@ class Resize(Attack):
         self.height = height
 
     @property
-    def shape(self):  # TODO: add typing
+    def shape(self) -> Shape:
         return self.height, self.width
 
-    def handle(self, frame):  # TODO: add typing
+    def handle(self, frame: np.ndarray) -> np.ndarray:
         shape = shape2shape(np.shape(frame), (self.height, self.width))
         return cv2.resize(frame, shape[::-1])
 
@@ -79,10 +80,10 @@ class Crop(Attack):
         self.x2 = x + width
 
     @property
-    def shape(self):  # TODO: add typing
+    def shape(self) -> Shape:
         return self.y2 - self.y1, self.x2 - self.x1
 
-    def handle(self, frame):  # TODO: add typing
+    def handle(self, frame: np.ndarray) -> np.ndarray:
         frame = np.array(frame)
         return frame[self.y1 : self.y2, self.x1 : self.x2]
 
@@ -95,7 +96,7 @@ class Fill(Attack):
         self.x2 = x + width
         self.value = value
 
-    def handle(self, frame):  # TODO: add typing
+    def handle(self, frame: np.ndarray) -> np.ndarray:
         frame = np.array(frame)
         frame[self.y1 : self.y2, self.x1 : self.x2] = self.value
         return frame
@@ -106,12 +107,12 @@ class Rotate(Attack):
         self.angle = angle
 
     @property
-    def shape(self):  # TODO: add typing
+    def shape(self) -> ShapeParameters:
         if RotateAngle.ROTATE_180 != self.angle:
             return -1
         return None
 
-    def handle(self, frame):  # TODO: add typing
+    def handle(self, frame: np.ndarray) -> np.ndarray:
         return cv2.rotate(frame, self.angle.code)
 
 
@@ -120,7 +121,7 @@ class Gaussian(Attack):
         self.std = std
         self.area = area
 
-    def handle(self, frame):  # TODO: add typing
+    def handle(self, frame: np.ndarray) -> np.ndarray:
         frame = np.array(frame, dtype=float)
         if self.area >= 1:
             frame.flat += np.random.normal(0, self.std, frame.size)
@@ -135,7 +136,7 @@ class SaltAndPepper(Attack):
     def __init__(self, area: float = 1) -> None:
         self.area = area
 
-    def handle(self, frame):  # TODO: add typing
+    def handle(self, frame: np.ndarray) -> np.ndarray:
         frame = frame.copy()
         height, width = frame.shape[:2]
         total = height * width

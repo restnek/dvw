@@ -1,7 +1,7 @@
 import os
 from dataclasses import dataclass
 from datetime import timedelta
-from typing import Callable, Any, List, Optional, Dict
+from typing import Callable, Any, List, Optional, Dict, Tuple
 
 import ffmpeg
 
@@ -31,7 +31,7 @@ def probe(path: str) -> VideoProbe:
     return VideoProbe(format_, streams, metadata)
 
 
-def _parse_format(format_):  # TODO: add typing
+def _parse_format(format_: Dict[str, Any]) -> Tuple[Dict[str, Any], Dict[str, Any]]:
     metadata = None
     if "tags" in format_:
         metadata = {k: v for k, v in format_["tags"].items()}
@@ -39,15 +39,15 @@ def _parse_format(format_):  # TODO: add typing
     return format_, metadata
 
 
-def _parse_all_streams(streams):  # TODO: add typing
+def _parse_all_streams(streams: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     return [_parse_all_fields(s, _STREAM_FIELDS[s["codec_type"]]) for s in streams]
 
 
-def _parse_all_fields(data, fields):  # TODO: add typing
+def _parse_all_fields(data: Dict[str, Any], fields: List[ProbeField]) -> Dict[str, Any]:
     return {f.label: _parse_field(data, f) for f in fields if f.name in data}
 
 
-def _parse_field(data, field):  # TODO: add typing
+def _parse_field(data: Dict[str, Any], field: ProbeField) -> Any:
     value = data[field.name]
     return field.handler(value) if field.handler else value
 
@@ -57,20 +57,20 @@ def _parse_filename(path: str) -> str:
     return os.path.split(path)[1]
 
 
-def _parse_size(size):  # TODO: add typing
+def _parse_size(size: Any) -> str:
     return size2human(float(size))
 
 
-def _parse_bitrate(bitrate):  # TODO: add typing
+def _parse_bitrate(bitrate: Any) -> str:
     return bitrate2human(float(bitrate))
 
 
 # move this function to util
-def _parse_duration(duration):  # TODO: add typing
+def _parse_duration(duration: Any) -> Any:
     return timedelta(seconds=int(float(duration)))
 
 
-_FORMAT_FIELDS = [
+_FORMAT_FIELDS: List[ProbeField] = [
     ProbeField("filename", "Filename", _parse_filename),
     ProbeField("format_long_name", "Format name"),
     ProbeField("size", "Size", _parse_size),
