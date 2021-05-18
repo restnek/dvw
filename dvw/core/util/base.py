@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 from collections import defaultdict
 from dataclasses import replace, dataclass
+from typing import Dict, Any
 
 
 class AutoCloseable(ABC):
@@ -19,6 +20,12 @@ class AutoCloseable(ABC):
 class CloneableDataclass(ABC):
     def shallow_copy(self):
         return replace(self)
+
+
+class PrettyDictionary(ABC):
+    @abstractmethod
+    def dictionary(self) -> Dict[str, Any]:
+        pass
 
 
 class Subscriber(ABC):

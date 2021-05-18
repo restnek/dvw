@@ -20,6 +20,7 @@ from .util.click import (
     EnumType,
     default_help_context,
 )
+from ..ui.terminal import print_properties
 
 
 @click.group(
@@ -186,7 +187,7 @@ def dwt_window_median(
         wavelet, level, subbands, position, window_size, emphasis
     )
     statistics = group_args.pop("handler")(algorithm, **group_args, **kwargs)
-    print(statistics)
+    print_properties(statistics, "dwt-window-median")
 
 
 @click.command(
@@ -247,7 +248,7 @@ def dwt_dct_even_odd_differential(
         wavelet, level, subbands, offset, area, repeats, alpha, emphasis
     )
     statistics = group_args.pop("handler")(algorithm, **group_args, **kwargs)
-    print(statistics)
+    print_properties(statistics, "dwt-dct-even-odd-differential")
 
 
 @click.command(
@@ -295,7 +296,7 @@ def dwt_svd_mean_over_window_edges(
         wavelet, level, subbands, window_size, alpha, emphasis
     )
     statistics = group_args.pop("handler")(algorithm, **group_args, **kwargs)
-    print(statistics)
+    print_properties(statistics, "dwt-svd-mean-over-window-edges")
 
 
 embed.add_command(dwt_window_median)

@@ -1,13 +1,13 @@
 import os
 from dataclasses import dataclass
 from datetime import timedelta
-from typing import Callable, Any, List, Optional
+from typing import Callable, Any, List, Optional, Dict
 
 import ffmpeg
 
 from .unit import bitrate2human, size2human
 
-__all__ = ["ProbeField", "ProbeValue", "VideoProbe", "probe"]
+__all__ = ["ProbeField", "VideoProbe", "probe"]
 
 
 @dataclass
@@ -18,16 +18,10 @@ class ProbeField:
 
 
 @dataclass
-class ProbeValue:
-    label: str
-    value: Any
-
-
-@dataclass
 class VideoProbe:
-    format: List[ProbeValue]
-    streams: List[List[ProbeValue]]
-    metadata: Optional[List[ProbeValue]]
+    format: Dict[str, Any]
+    streams: List[Dict[str, Any]]
+    metadata: Optional[Dict[str, Any]]
 
 
 def probe(path: str) -> VideoProbe:
@@ -40,7 +34,7 @@ def probe(path: str) -> VideoProbe:
 def _parse_format(format_):  # TODO: add typing
     metadata = None
     if "tags" in format_:
-        metadata = [ProbeValue(k, v) for k, v in format_["tags"].items()]
+        metadata = {k: v for k, v in format_["tags"].items()}
     format_ = _parse_all_fields(format_, _FORMAT_FIELDS)
     return format_, metadata
 
@@ -50,15 +44,15 @@ def _parse_all_streams(streams):  # TODO: add typing
 
 
 def _parse_all_fields(data, fields):  # TODO: add typing
-    return [_parse_field(data, f) for f in fields if f.name in data]
+    return {f.label: _parse_field(data, f) for f in fields if f.name in data}
 
 
 def _parse_field(data, field):  # TODO: add typing
     value = data[field.name]
-    value = field.handler(value) if field.handler else value
-    return ProbeValue(field.label, value)
+    return field.handler(value) if field.handler else value
 
 
+# replace on function from util
 def _parse_filename(path: str) -> str:
     return os.path.split(path)[1]
 
@@ -71,6 +65,7 @@ def _parse_bitrate(bitrate):  # TODO: add typing
     return bitrate2human(float(bitrate))
 
 
+# move this function to util
 def _parse_duration(duration):  # TODO: add typing
     return timedelta(seconds=int(float(duration)))
 

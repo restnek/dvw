@@ -1,65 +1,66 @@
+from typing import Optional, Any, Dict, Iterable
+
 from rich import box, print
-from rich.console import RenderGroup
+from rich.align import AlignMethod
+from rich.columns import Columns
+from rich.console import RenderGroup, RenderableType
 from rich.panel import Panel
 from rich.table import Table
-from rich.text import Text
+
+from dvw.analysis.metrics import MetricValue
+from dvw.analysis.probe import VideoProbe
+from dvw.core.util.base import PrettyDictionary
 
 
-class PropPanel(Panel):
+class PropertyPanel(Panel):
     def __init__(
-        self, rows, sub_rows=None, title=None, title_align="center", expand=False
+        self,
+        data: Dict[str, Any] = None,
+        title: Optional[str] = None,
+        title_align: AlignMethod = "center",
+        expand: bool = False,
     ) -> None:
-        renderable = PropTable(rows)
-
-        if sub_rows:
-            sub_panels = [
-                PropPanel(r, title=t, title_align="left", expand=True)
-                for t, r in sub_rows
-            ]
-            renderable = RenderGroup(renderable, *sub_panels)
-
+        self.table = PropertyTable(data)
+        self.group = RenderGroup(self.table)
         super().__init__(
-            renderable, title=title, title_align=title_align, expand=expand
+            self.group, title=title, title_align=title_align, expand=expand
         )
 
+    def add_row(self, property_: str, value: Any) -> None:
+        self.table.add_row(property_, str(value))
 
-class PropTable(Table):
-    def __init__(self, rows):
+    def add_section(self, renderable: RenderableType) -> None:
+        self.group.renderables.append(renderable)
+
+
+class PropertyTable(Table):
+    def __init__(self, data: Dict[str, Any]) -> None:
         super().__init__(
             box=box.MINIMAL, show_header=False, show_edge=False, expand=False
         )
-
-        for r in rows:
-            super().add_row(*map(str, r))
-
-
-class ComparisonPanel(Panel):
-    def __init__(self, headers, rows, title=None, title_align="center"):
-        table = ComparisonTable(headers, rows)
-        super().__init__(table, title=title, title_align=title_align, expand=False)
+        if data:
+            for k, v in data.items():
+                super().add_row(k, str(v))
 
 
-class ComparisonTable(Table):
-    def __init__(self, headers, rows):
-        super().__init__(box=box.MINIMAL, show_edge=False, expand=False)
-
-        super().add_column(style="bold")
-        for h in headers:
-            super().add_column(Text(h, justify="center"))
-
-        for r in rows:
-            super().add_row(*map(str, r))
-
-
-def print_probe(format_, streams, metadata=None):
-    sub_rows = [["Meta", metadata]] if metadata else None
-    print(PropPanel(format_, sub_rows, "Format"))
-
-    for i, stream in enumerate(streams):
-        print()
-        print(PropPanel(stream, title=f"Stream {i}"))
-
-
-def print_cmp(quality, title="Comparison"):
-    panel = ComparisonPanel(["Value"], quality, title)
+def print_properties(data: PrettyDictionary, title: Optional[str] = None) -> None:
+    panel = PropertyPanel(data.dictionary(), title)
     print(panel)
+
+
+def print_probe(probe: VideoProbe) -> None:
+    format_panel = PropertyPanel(probe.format, "Format", expand=True)
+    if probe.metadata:
+        format_panel.add_section(PropertyPanel(probe.metadata, "Metadata", expand=True))
+
+    stream_group = RenderGroup()
+    for i, stream in enumerate(probe.streams, 1):
+        stream_group.renderables.append(
+            PropertyPanel(stream, f"Stream {i}", expand=True)
+        )
+
+    print(Columns([format_panel, stream_group]))
+
+
+def print_metrics(metrics: Iterable[MetricValue]) -> None:
+    pass

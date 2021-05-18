@@ -5,6 +5,7 @@ from dvw.core.io import WatermarkType
 from dvw.core.util.click import append_const, EnumType, update_context
 from .video import VideoMetric, VideoComparator
 from .watermark import WatermarkMetric, WatermarkComparator
+from ...ui.terminal import print_metrics
 
 
 @click.group(help="Calculate quality metrics between two files")
@@ -44,8 +45,8 @@ def video(group_args, **kwargs):
     comparator = VideoComparator(
         group_args["precision"], *kwargs.get("metrics", list(VideoMetric))
     )
-    quality = comparator.compare(*kwargs["files"])
-    print(quality)  # terminal.print_cmp(quality, 'Video Comparison')
+    metrics = comparator.compare(*kwargs["files"])
+    print_metrics(metrics)
 
 
 @metric.command(
@@ -85,6 +86,5 @@ def watermark(group_args, **kwargs):
     comparator = WatermarkComparator(
         group_args["precision"], *kwargs.get("metrics", list(WatermarkMetric))
     )
-    quality = comparator.compare(*kwargs["files"], **kwargs)
-    # quality = cmp_watermarks(*kwargs['files'], **kwargs)
-    print(quality)  # terminal.print_cmp(quality, 'Watermark Comparison')
+    metrics = comparator.compare(*kwargs["files"], **kwargs)
+    print_metrics(metrics)

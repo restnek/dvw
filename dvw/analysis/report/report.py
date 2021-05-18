@@ -76,6 +76,7 @@ class HtmlReport(Report):
         self.sources_id = 1
         self.current_algorithm = None
         self.current_experiment = 0
+        self.current_experiment_data = {}
         self.current_assets = 0
         self.current_statistics = {}
         self.current_attack = ""
@@ -105,6 +106,7 @@ class HtmlReport(Report):
         self.current_path = create_path(self.report_path, algorithm)
         self.current_algorithm = algorithm
         self.current_experiment = 0
+        self.current_experiment_data = {}
         self.current_assets = 0
         self.current_statistics = {}
         self.current_attack = ""
@@ -114,6 +116,7 @@ class HtmlReport(Report):
         self.current_experiment += 1
         self.current_assets = 0
         self.current_statistics = {}
+        self.current_experiment_data = {"parameters": params}
         self.current_attack = ""
         self.current_attack_id = 0
 
@@ -122,12 +125,16 @@ class HtmlReport(Report):
             self.current_algorithm,
             self.experiment_folder + str(self.current_experiment),
         )
+        self._save_result(self.current_experiment_data)
 
     def new_assets(self) -> None:
         self.current_assets += 1
         self.current_statistics = {}
         self.current_attack = ""
         self.current_attack_id = 0
+        self.current_experiment_data.setdefault("assets", []).append(
+            self.assets_folder + str(self.current_assets)
+        )
 
         self.current_path = create_path(
             self.report_path,
@@ -135,6 +142,12 @@ class HtmlReport(Report):
             self.experiment_folder + str(self.current_experiment),
             self.assets_folder + str(self.current_assets),
         )
+        path = os.path.join(
+            self.report_path,
+            self.current_algorithm,
+            self.experiment_folder + str(self.current_experiment),
+        )
+        self._save_result(self.current_experiment_data, path)
 
     def new_attack(self, attack: str) -> None:
         self.current_attack = attack
@@ -181,8 +194,9 @@ class HtmlReport(Report):
         )
         self._save_result(self.current_statistics)
 
-    def _save_result(self, value: Dict[str, Any]) -> None:
-        path = os.path.join(self.current_path, self.result_filename)
+    def _save_result(self, value: Dict[str, Any], path: Optional[str] = None) -> None:
+        path = path if path else self.current_path
+        path = os.path.join(path, self.result_filename)
         with open(path, "w") as file:
             json.dump(value, file, default=str, indent=4)
 

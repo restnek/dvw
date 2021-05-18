@@ -1,10 +1,11 @@
 from dataclasses import dataclass
 from enum import Enum, auto
 from time import time
+from typing import Dict, Any
 
 from .io import VideoTunnel
 from .io.video import FrameHandler
-from .util.base import Observable, CloneableDataclass
+from .util.base import Observable, CloneableDataclass, PrettyDictionary
 
 
 class EmbedEvent(Enum):
@@ -16,7 +17,7 @@ class EmbedEvent(Enum):
 
 
 @dataclass
-class EmbeddingStatistics(CloneableDataclass):
+class EmbeddingStatistics(CloneableDataclass, PrettyDictionary):
     total_frames: int
     embedded: int = 0
     copied: int = 0
@@ -31,6 +32,18 @@ class EmbeddingStatistics(CloneableDataclass):
     @property
     def elapsed_time(self):
         return self.end_time - self.start_time
+
+    def dictionary(self) -> Dict[str, Any]:
+        return {
+            "Total frames": self.total_frames,
+            "Embedded bits": self.embedded,
+            "Copied frames": self.copied,
+            "Frames with watermark": self.frames_with_watermark,
+            "Full watermark": self.full_watermark,
+            "Start time": self.start_time,
+            "End time": self.end_time,
+            "Elapsed time": self.elapsed_time,
+        }
 
 
 class FrameEmbeddingSuite(FrameHandler):
@@ -106,7 +119,7 @@ class ExtractEvent(Enum):
 
 
 @dataclass
-class ExtractingStatistics(CloneableDataclass):
+class ExtractingStatistics(CloneableDataclass, PrettyDictionary):
     left: int
     extracted: int = 0
     start_time: float = 0
@@ -123,6 +136,17 @@ class ExtractingStatistics(CloneableDataclass):
     @property
     def full_watermark(self):
         return not self.left
+
+    def dictionary(self) -> Dict[str, Any]:
+        return {
+            "Total bits": self.total,
+            "Left bits": self.left,
+            "Extracted bits": self.extracted,
+            "Full watermark": self.full_watermark,
+            "Start time": self.start_time,
+            "End time": self.end_time,
+            "Elapsed time": self.elapsed_time,
+        }
 
 
 class BlindWatermarkExtractor(Observable):
