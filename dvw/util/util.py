@@ -1,7 +1,8 @@
+import json
 import os
 from enum import Enum
 from pathlib import Path
-from typing import Union, List, Iterable, Type
+from typing import Union, List, Iterable, Type, Dict, Any
 
 import numpy as np
 
@@ -84,3 +85,8 @@ def create_folder(*paths: str) -> str:
 
 def filename(path: str) -> str:
     return os.path.split(path)[1]
+
+
+def save_json(path: str, data: Dict[str, Any]) -> None:
+    with open(path, "w") as file:
+        json.dump(data, file, default=str, indent=4)

@@ -29,7 +29,7 @@ def report():
 def start(config, output_path):
     precision = 4
     kit = config2kit(config)
-    report_ = HtmlReport(output_path)
+    report_ = HtmlReport(output_path, "exp", "assets", "result.json")
     bf = BruteForce(kit, precision)
     bf.start(report_)
 

@@ -1,1 +1,1 @@
-from dvw.report.report import Report, HtmlReport
+from dvw.report.report import HtmlReport
