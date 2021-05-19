@@ -18,7 +18,6 @@ class EmbedEvent(Enum):
     AFTER_EMBEDDING = auto()
     BEFORE_FRAME_EMBEDDING = auto()
     AFTER_FRAME_EMBEDDING = auto()
-    ERROR_EMBEDDING = auto()
 
 
 @dataclass
@@ -81,15 +80,6 @@ class WatermarkEmbedder(VideoTunnel):
     def embed(
         self, embedding_kit: FrameEmbeddingKit, copy: bool = True
     ) -> EmbeddingStatistics:
-        try:
-            return self._embed(embedding_kit, copy)
-        except Exception as e:
-            self.notify(EmbedEvent.ERROR_EMBEDDING, exception=e)
-            raise
-
-    def _embed(
-        self, embedding_kit: FrameEmbeddingKit, copy: bool
-    ) -> EmbeddingStatistics:
         self.notify(EmbedEvent.AFTER_EMBEDDING)
         self.statistics.start_time = time()
 
@@ -130,7 +120,6 @@ class ExtractEvent(Enum):
     AFTER_EXTRACTING = auto()
     BEFORE_FRAME_EXTRACTING = auto()
     AFTER_FRAME_EXTRACTING = auto()
-    ERROR_EXTRACTING = auto()
 
 
 @dataclass
@@ -172,18 +161,6 @@ class BlindWatermarkExtractor(Observable):
         self.method = method
 
     def extract(
-        self,
-        video_reader: VideoReader,
-        watermark_writer: WatermarkBitWriter,
-        quantity: int,
-    ) -> ExtractingStatistics:
-        try:
-            return self._stream2watermark(video_reader, watermark_writer, quantity)
-        except Exception as e:
-            self.notify(ExtractEvent.ERROR_EXTRACTING, exception=e)
-            raise
-
-    def _stream2watermark(
         self,
         video_reader: VideoReader,
         watermark_writer: WatermarkBitWriter,
