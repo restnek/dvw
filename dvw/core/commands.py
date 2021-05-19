@@ -4,23 +4,23 @@ import click
 from click import IntRange, Choice, FloatRange
 from pywt import wavelist
 
-from .algorithms import (
+from dvw.core import EmbeddingStatistics, ExtractingStatistics
+from dvw.core.algorithms import (
     DwtWindowMedian,
     Algorithm,
     DwtDctEvenOddDifferential,
     DwtSvdMeanOverWindowEdges,
 )
-from .core import EmbeddingStatistics, ExtractingStatistics
-from .io import WatermarkType
-from .methods import WindowPosition, Emphasis
-from .transforms import WaveletSubband
-from .util.click import (
+from dvw.core.methods import WindowPosition, Emphasis
+from dvw.core.transforms import WaveletSubband
+from dvw.io.watermark import WatermarkType
+from dvw.ui.terminal import print_properties
+from dvw.util.click import (
     IgnoreRequiredWithHelp,
     update_context,
     EnumType,
     default_help_context,
 )
-from ..ui.terminal import print_properties
 
 
 @click.group(

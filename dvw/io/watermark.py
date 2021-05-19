@@ -7,7 +7,7 @@ from typing import Optional, Union, AnyStr, Callable, Any, Iterable, Type, Suppo
 import cv2
 import numpy as np
 
-from ..util.base import AutoCloseable
+from dvw.util.base import AutoCloseable
 
 
 class WatermarkBitReader(AutoCloseable, ABC):
@@ -20,7 +20,7 @@ class WatermarkBitReader(AutoCloseable, ABC):
         pass
 
 
-class WatermarkBitBatchReader(AutoCloseable, ABC):
+class WatermarkBatchReader(AutoCloseable, ABC):
     @abstractmethod
     def read_all(self) -> Iterable[int]:
         pass
@@ -80,7 +80,7 @@ class RandomBitReader(WatermarkBitGenerator):
         return self.generator.getrandbits(1)
 
 
-class BitFileReader(WatermarkBitReader, WatermarkBitBatchReader):
+class BitFileReader(WatermarkBitReader, WatermarkBatchReader):
     def __init__(self, path: str, buffering: int = 4096) -> None:
         self.file = open(path, "rb", buffering)
         self.buffer = 0
@@ -139,7 +139,7 @@ class BitFileWriter(WatermarkBitWriter):
             self.current = 0
 
 
-class BWImageReader(WatermarkBitReader, WatermarkBitBatchReader):
+class BWImageReader(WatermarkBitReader, WatermarkBatchReader):
     def __init__(self, path: str, width: Optional[int] = None) -> None:
         self.buffer = self._open(path, width)
         self.width = width

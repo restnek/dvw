@@ -5,9 +5,9 @@ from typing import Tuple, Optional, Any
 import cv2
 import numpy as np
 
-from ..util import shape2shape, istuple
-from ..util.base import AutoCloseable, Observable
-from ..util.types import Shape, FrameWithReturn
+from dvw.util import shape2shape, istuple
+from dvw.util.base import AutoCloseable, Observable
+from dvw.util.types import Shape2d, FrameWithReturn
 
 
 class VideoReader(AutoCloseable):
@@ -30,7 +30,7 @@ class VideoReader(AutoCloseable):
         return int(self.video.get(cv2.CAP_PROP_FRAME_HEIGHT))
 
     @property
-    def shape(self) -> Shape:
+    def shape(self) -> Shape2d:
         return self.height, self.width
 
     @property
@@ -67,7 +67,7 @@ class VideoTunnelEvent(Enum):
 
 class FrameHandler(ABC):
     @abstractmethod
-    def handle(self, frame) -> FrameWithReturn:
+    def handle(self, frame: np.ndarray) -> FrameWithReturn:
         pass
 
 
@@ -78,7 +78,7 @@ class VideoTunnel(AutoCloseable, Observable):
         output_path: str,
         codec: str,
         fps: Optional[int] = None,
-        shape: Optional[Shape] = None,
+        shape: Optional[Shape2d] = None,
     ) -> None:
         super().__init__()
         self.reader = VideoReader(input_path)
@@ -125,7 +125,7 @@ class VideoTunnel(AutoCloseable, Observable):
             success, frame = self.reader.read()
         return copied
 
-    def _notify_copy(self, event: Any, copied: int) -> None:
+    def _notify_copy(self, event, copied: int) -> None:
         self.notify(event, position=self.position, total=self.frames, copied=copied)
 
 

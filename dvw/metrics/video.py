@@ -4,8 +4,8 @@ import cv2
 import numpy as np
 from skimage.metrics import structural_similarity
 
-from dvw.core.io import PairVideoReader
-from .base import BaseMetric, MetricValue, Comparator
+from dvw.io.video import PairVideoReader
+from dvw.metrics.base import BaseMetric, MetricValue, Comparator
 
 
 def ssim(frame1: np.ndarray, frame2: np.ndarray) -> float:

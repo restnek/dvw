@@ -20,7 +20,7 @@ class EnumType(click.Choice):
     def __init__(
         self,
         enum: Type[Enum],
-        type_fn: Callable[[Any], Enum] = None,
+        type_fn: Optional[Callable[[Any], Any]] = None,  # maybe should accept str?
         by_name: bool = False,
     ) -> None:
         choices = list(enum.__members__) if by_name else enum_values(enum)
@@ -51,7 +51,7 @@ def append_const(option, type_):
     return callback
 
 
-def update_context(ctx: Context, **kwargs: Any) -> None:
+def update_context(ctx: Context, **kwargs) -> None:
     ctx.ensure_object(dict)
     ctx.obj.update(kwargs)
 

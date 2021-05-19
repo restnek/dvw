@@ -7,15 +7,15 @@ from rich.console import RenderGroup, RenderableType
 from rich.panel import Panel
 from rich.table import Table
 
-from dvw.analysis.metrics import MetricValue
-from dvw.analysis.probe import VideoProbe
-from dvw.core.util.base import PrettyDictionary
+from dvw.metrics.base import MetricValue
+from dvw.probe import VideoProbe
+from dvw.util.base import PrettyDictionary
 
 
 class PropertyPanel(Panel):
     def __init__(
         self,
-        data: Dict[str, Any] = None,
+        data: Optional[Dict[str, Any]] = None,
         title: Optional[str] = None,
         title_align: AlignValues = "center",
         expand: bool = False,
@@ -26,7 +26,7 @@ class PropertyPanel(Panel):
             self.group, title=title, title_align=title_align, expand=expand
         )
 
-    def add_row(self, property_: str, value: Any) -> None:
+    def add_row(self, property_: str, value) -> None:
         self.table.add_row(property_, str(value))
 
     def add_section(self, renderable: RenderableType) -> None:

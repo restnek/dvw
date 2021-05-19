@@ -2,7 +2,7 @@ import operator
 from dataclasses import dataclass
 from functools import reduce
 from itertools import combinations, product
-from typing import Dict, Any, Type, List
+from typing import Dict, Any, Type, List, Optional
 
 import cerberus
 import numpy as np
@@ -10,16 +10,15 @@ import yaml
 from cerberus import errors
 from pywt import wavelist
 
-from dvw.analysis.attacks import attacks
-from dvw.analysis.attacks.attacks import FlipAxis, RotateAngle
-from dvw.analysis.metrics import WatermarkMetric, VideoMetric
-from dvw.analysis.metrics.watermark import WatermarkComparator
-from dvw.analysis.report.util import contains
+from dvw import attacks
+from dvw.attacks import FlipAxis, RotateAngle
 from dvw.core import algorithms
-from dvw.core.io import WatermarkType
 from dvw.core.methods import Emphasis, WindowPosition
 from dvw.core.transforms import WaveletSubband
-from dvw.core.util import isstr, isarray, enum_values, isint, isdict, isnum
+from dvw.io.watermark import WatermarkType
+from dvw.metrics.video import VideoMetric
+from dvw.metrics.watermark import WatermarkComparator, WatermarkMetric
+from dvw.util import isstr, isarray, enum_values, isint, isdict, isnum, contains
 
 
 class Validator(cerberus.Validator):
@@ -166,7 +165,7 @@ class Validator(cerberus.Validator):
 class WatermarkHolder:
     type: WatermarkType
     path: str
-    params: Dict[str, Any] = None
+    params: Optional[Dict[str, Any]] = None
 
     def reader(self):
         return self.type.reader(self.path, **self.params)
@@ -196,7 +195,7 @@ class WatermarkHolder:
 @dataclass
 class ClassHolder:
     class_: Type
-    params: Dict[str, List[Any]]
+    params: Dict[str, list]
 
     @property
     def total(self) -> int:

@@ -36,7 +36,7 @@ class PrettyDictionary(ABC):
 
 class Subscriber(ABC):
     @abstractmethod
-    def update(self, event: Any, **kwargs: Any) -> None:
+    def update(self, event, **kwargs) -> None:
         pass
 
 
@@ -44,11 +44,11 @@ class Observable(ABC):
     def __init__(self) -> None:
         self.subscribers = defaultdict(set)
 
-    def subscribe(self, subscriber: Subscriber, *events: Any) -> None:
+    def subscribe(self, subscriber: Subscriber, *events) -> None:
         for e in events:
             self.subscribers[e].add(subscriber)
 
-    def unsubscribe(self, subscriber: Subscriber, *events: Any) -> None:
+    def unsubscribe(self, subscriber: Subscriber, *events) -> None:
         if events:
             self.unsubscribe_events(subscriber, events)
         else:
@@ -58,10 +58,10 @@ class Observable(ABC):
         for s in self.subscribers.values():
             s.discard(subscriber)
 
-    def unsubscribe_events(self, subscriber: Subscriber, *events: Any) -> None:
+    def unsubscribe_events(self, subscriber: Subscriber, *events) -> None:
         for e in events:
             self.subscribers[e].discard(subscriber)
 
-    def notify(self, event: Any, **kwargs: Any) -> None:
+    def notify(self, event, **kwargs) -> None:
         for s in self.subscribers[event]:
             s.update(event, **kwargs)

@@ -1,7 +1,7 @@
 import click
 from click import IntRange, FloatRange
 
-from .attacks import (
+from dvw.attacks import (
     FlipAxis,
     RotateAngle,
     Flip,
@@ -12,7 +12,7 @@ from .attacks import (
     Gaussian,
     SaltAndPepper,
 )
-from ...core.util.click import (
+from dvw.util.click import (
     IgnoreRequiredWithHelp,
     update_context,
     default_help_context,

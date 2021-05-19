@@ -1,10 +1,9 @@
-from typing import Any, List
+from typing import List
 
 import numpy as np
 
-from .base import BaseMetric, MetricValue, Comparator
-from ...core.io import WatermarkType, WatermarkBitReader
-from ...core.io.watermark import WatermarkBitBatchReader
+from dvw.io.watermark import WatermarkBatchReader, WatermarkType, WatermarkBitReader
+from dvw.metrics.base import BaseMetric, MetricValue, Comparator
 
 
 def _ber(
@@ -28,8 +27,8 @@ def _ber(
 
 
 def _normalized_correlation(
-    watermark_reader1: WatermarkBitBatchReader,
-    watermark_reader2: WatermarkBitBatchReader,
+    watermark_reader1: WatermarkBatchReader,
+    watermark_reader2: WatermarkBatchReader,
     precision: int,
 ) -> MetricValue:
     a = list(watermark_reader1.read_all())
@@ -53,7 +52,7 @@ class WatermarkComparator(Comparator):
         self.metrics = metrics or list(WatermarkMetric)
 
     def compare(
-        self, path1: str, path2: str, watermark_type: WatermarkType, **kwargs: Any
+        self, path1: str, path2: str, watermark_type: WatermarkType, **kwargs
     ) -> List[MetricValue]:
         return [
             self._calculate_metric(path1, path2, watermark_type, m, **kwargs)
@@ -66,7 +65,7 @@ class WatermarkComparator(Comparator):
         path2: str,
         watermark_type: WatermarkType,
         metric: WatermarkMetric,
-        **kwargs: Any
+        **kwargs
     ) -> MetricValue:
         with watermark_type.reader(
             path1, **kwargs

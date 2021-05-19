@@ -1,15 +1,26 @@
 from abc import ABC
 from enum import Enum
-from typing import Optional, Type
+from typing import Optional, Type, Dict
 
 import cv2
 import numpy as np
 
-from dvw.core.io import VideoTunnel
-from dvw.core.io.video import FrameHandler
 from dvw.core.transforms import Transformation
-from dvw.core.util import shape2shape
-from dvw.core.util.types import ShapeParameters, Shape
+from dvw.io.video import VideoTunnel, FrameHandler
+from dvw.util import shape2shape
+from dvw.util.types import Shape2dParameters, Shape2d
+
+
+class Attack(Transformation, FrameHandler, ABC):
+    @property
+    def shape(self) -> Shape2dParameters:
+        return None
+
+    def transform(self, domain: np.ndarray, memory: list) -> np.ndarray:
+        return self.handle(domain)
+
+    def restore(self, domain: np.ndarray, memory: list) -> np.ndarray:
+        return domain
 
 
 class FlipAxis(Enum):
@@ -22,30 +33,6 @@ class FlipAxis(Enum):
         obj._value_ = value
         obj.code = code
         return obj
-
-
-class RotateAngle(Enum):
-    ROTATE_90_CLOCKWISE = (90, 0)
-    ROTATE_180 = (180, 1)
-    ROTATE_90_COUNTERCLOCKWISE = (270, 2)
-
-    def __new__(cls, value: int, code: int) -> "RotateAngle":
-        obj = object().__new__(cls)
-        obj._value_ = value
-        obj.code = code
-        return obj
-
-
-class Attack(Transformation, FrameHandler, ABC):
-    @property
-    def shape(self) -> ShapeParameters:
-        return None
-
-    def transform(self, domain: np.ndarray, memory: list) -> np.ndarray:
-        return self.handle(domain)
-
-    def restore(self, domain: np.ndarray, memory: list) -> np.ndarray:
-        return domain
 
 
 class Flip(Attack):
@@ -64,7 +51,7 @@ class Resize(Attack):
         self.height = height
 
     @property
-    def shape(self) -> Shape:
+    def shape(self) -> Shape2d:
         return self.height, self.width
 
     def handle(self, frame: np.ndarray) -> np.ndarray:
@@ -80,7 +67,7 @@ class Crop(Attack):
         self.x2 = x + width
 
     @property
-    def shape(self) -> Shape:
+    def shape(self) -> Shape2d:
         return self.y2 - self.y1, self.x2 - self.x1
 
     def handle(self, frame: np.ndarray) -> np.ndarray:
@@ -102,12 +89,24 @@ class Fill(Attack):
         return frame
 
 
+class RotateAngle(Enum):
+    ROTATE_90_CLOCKWISE = (90, 0)
+    ROTATE_180 = (180, 1)
+    ROTATE_90_COUNTERCLOCKWISE = (270, 2)
+
+    def __new__(cls, value: int, code: int) -> "RotateAngle":
+        obj = object().__new__(cls)
+        obj._value_ = value
+        obj.code = code
+        return obj
+
+
 class Rotate(Attack):
     def __init__(self, angle: RotateAngle) -> None:
         self.angle = angle
 
     @property
-    def shape(self) -> ShapeParameters:
+    def shape(self) -> Shape2dParameters:
         if RotateAngle.ROTATE_180 != self.angle:
             return -1
         return None
@@ -170,7 +169,7 @@ def name2class(name: str) -> Type[Attack]:
     return _ATTACKS.get(name)
 
 
-_ATTACKS = {
+_ATTACKS: Dict[str, Type[Attack]] = {
     "flip": Flip,
     "resize": Resize,
     "crop": Crop,

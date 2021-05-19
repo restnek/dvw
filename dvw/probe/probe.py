@@ -1,20 +1,17 @@
-import os
 from dataclasses import dataclass
-from datetime import timedelta
-from typing import Callable, Any, List, Optional, Dict, Tuple
+from typing import Callable, Any, List, Optional, Dict, Tuple, Iterable
 
 import ffmpeg
 
-from .unit import bitrate2human, size2human
-
-__all__ = ["ProbeField", "VideoProbe", "probe"]
+from dvw.util import filename
+from dvw.util.unit import bitrate2human, size2human, seconds2human
 
 
 @dataclass
 class ProbeField:
     name: str
     label: str
-    handler: Callable[[str], Any] = None
+    handler: Optional[Callable[[str], Any]] = None
 
 
 @dataclass
@@ -39,39 +36,35 @@ def _parse_format(format_: Dict[str, Any]) -> Tuple[Dict[str, Any], Dict[str, An
     return format_, metadata
 
 
-def _parse_all_streams(streams: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+def _parse_all_streams(streams: Iterable[Dict[str, Any]]) -> List[Dict[str, Any]]:
     return [_parse_all_fields(s, _STREAM_FIELDS[s["codec_type"]]) for s in streams]
 
 
-def _parse_all_fields(data: Dict[str, Any], fields: List[ProbeField]) -> Dict[str, Any]:
+def _parse_all_fields(
+    data: Dict[str, Any], fields: Iterable[ProbeField]
+) -> Dict[str, Any]:
     return {f.label: _parse_field(data, f) for f in fields if f.name in data}
 
 
-def _parse_field(data: Dict[str, Any], field: ProbeField) -> Any:
+def _parse_field(data: Dict[str, Any], field: ProbeField) -> str:
     value = data[field.name]
     return field.handler(value) if field.handler else value
 
 
-# replace on function from util
-def _parse_filename(path: str) -> str:
-    return os.path.split(path)[1]
-
-
-def _parse_size(size: Any) -> str:
+def _parse_size(size) -> str:
     return size2human(float(size))
 
 
-def _parse_bitrate(bitrate: Any) -> str:
+def _parse_bitrate(bitrate) -> str:
     return bitrate2human(float(bitrate))
 
 
-# move this function to util
-def _parse_duration(duration: Any) -> Any:
-    return timedelta(seconds=int(float(duration)))
+def _parse_duration(duration) -> str:
+    return seconds2human(float(duration))
 
 
 _FORMAT_FIELDS: List[ProbeField] = [
-    ProbeField("filename", "Filename", _parse_filename),
+    ProbeField("filename", "Filename", filename),
     ProbeField("format_long_name", "Format name"),
     ProbeField("size", "Size", _parse_size),
     ProbeField("bit_rate", "Bitrate", _parse_bitrate),

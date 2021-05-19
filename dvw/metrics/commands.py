@@ -1,11 +1,11 @@
 import click
 from click import IntRange
 
-from dvw.core.io import WatermarkType
-from dvw.core.util.click import append_const, EnumType, update_context
-from .video import VideoMetric, VideoComparator
-from .watermark import WatermarkMetric, WatermarkComparator
-from ...ui.terminal import print_metrics
+from dvw.io.watermark import WatermarkType
+from dvw.metrics.video import VideoMetric, VideoComparator
+from dvw.metrics.watermark import WatermarkMetric, WatermarkComparator
+from dvw.ui.terminal import print_metrics
+from dvw.util.click import append_const, EnumType, update_context
 
 
 @click.group(help="Calculate quality metrics between two files")

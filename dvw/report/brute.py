@@ -1,13 +1,13 @@
 from itertools import product
 from typing import List, Tuple, Optional
 
-from .config import AnalysisKit, WatermarkHolder, ClassHolder
-from .report import Report
-from ..attacks.attacks import Attack
-from ..metrics import MetricValue
-from ..metrics.video import VideoComparator
-from ...core.algorithms import Algorithm
-from ...core.core import ExtractingStatistics, EmbeddingStatistics
+from dvw.attacks import Attack
+from dvw.core import ExtractingStatistics, EmbeddingStatistics
+from dvw.core.algorithms import Algorithm
+from dvw.metrics.base import MetricValue
+from dvw.metrics.video import VideoComparator
+from dvw.report import Report
+from dvw.report.config import AnalysisKit, WatermarkHolder, ClassHolder
 
 
 class BruteForce:
@@ -89,7 +89,7 @@ class BruteForce:
         watermark_holder: WatermarkHolder,
         algorithm: Algorithm,
         quantity: int,
-        attack: Attack = None,
+        attack: Optional[Attack] = None,
     ) -> Tuple[ExtractingStatistics, Optional[List[MetricValue]]]:
         with watermark_holder.writer(output_path) as watermark_writer:
             statistics = algorithm.extract(

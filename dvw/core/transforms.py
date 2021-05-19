@@ -1,13 +1,13 @@
 from abc import ABC, abstractmethod
 from enum import Enum
-from typing import List
+from typing import List, Iterable, Reversible
 
 import cv2
 import numpy as np
 from pywt import waverec2, wavedec2
 
 from dvw.core.methods import WindowPosition
-from dvw.core.util.util import tuple2list
+from dvw.util import tuple2list
 
 
 class Transformation(ABC):
@@ -52,10 +52,10 @@ class Pipe(Transformation):
 
 
 class Every(Pipe):
-    def transform(self, domains, memory: list):
+    def transform(self, domains: Iterable, memory: list) -> list:
         return [super(Every, self).transform(d, memory) for d in domains]
 
-    def restore(self, domains, memory: list):
+    def restore(self, domains: Reversible, memory: list) -> list:
         domains = [super(Every, self).restore(d, memory) for d in reversed(domains)]
         return domains[::-1]
 

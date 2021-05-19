@@ -1,24 +1,24 @@
 from abc import ABC, abstractmethod
 from enum import Enum
-from typing import Callable, Any, Tuple
+from typing import Callable, Tuple
 
 import numpy as np
 
-from dvw.core.io import WatermarkBitReader, WatermarkBitWriter
-from dvw.core.util import bit2sign
+from dvw.io.watermark import WatermarkBitReader, WatermarkBitWriter
+from dvw.util import bit2sign
 
 
 class Method(ABC):
     @abstractmethod
     def embed(
-        self, domain: Any, watermark_reader: WatermarkBitReader  # TODO: fix Any typing
-    ) -> Tuple[Any, int]:
+        self, domain: np.ndarray, watermark_reader: WatermarkBitReader
+    ) -> Tuple[np.ndarray, int]:
         pass
 
     @abstractmethod
     def extract(
         self,
-        domain: Any,  # TODO: fix Any typing
+        domain: np.ndarray,
         watermark_writer: WatermarkBitWriter,
         quantity: int,
     ) -> int:
@@ -27,11 +27,11 @@ class Method(ABC):
 
 class BitManipulator(ABC):
     @abstractmethod
-    def embed(self, domain: Any, bit: int) -> Any:  # TODO: fix Any typing
+    def embed(self, domain: np.ndarray, bit: int) -> np.ndarray:
         pass
 
     @abstractmethod
-    def extract(self, domain: Any) -> int:  # TODO: fix Any typing
+    def extract(self, domain: np.ndarray) -> int:
         pass
 
 
@@ -268,18 +268,21 @@ class CapacityEmphasis(Method):
         self, domains: np.ndarray, watermark_reader: WatermarkBitReader
     ) -> Tuple[np.ndarray, int]:
         embedded = 0
+
         for d in domains:
             if not watermark_reader.available():
                 break
             bit = watermark_reader.read_bit()
             self.bit_manipulator.embed(d, bit)
             embedded += 1
+
         return domains, embedded
 
     def extract(
         self, domains: np.ndarray, watermark_writer: WatermarkBitWriter, quantity: int
     ) -> int:
         extracted = 0
+
         for d in domains:
             if quantity < 1:
                 break
@@ -287,6 +290,7 @@ class CapacityEmphasis(Method):
             watermark_writer.write_bit(bit)
             extracted += 1
             quantity -= 1
+
         return extracted
 
 

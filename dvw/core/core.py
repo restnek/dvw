@@ -1,23 +1,24 @@
 from dataclasses import dataclass
-from enum import IntEnum
+from enum import Enum, auto
 from time import time
 from typing import Dict, Any, Tuple
 
 import numpy as np
 
-from .io import VideoTunnel, WatermarkBitReader, WatermarkBitWriter
-from .io.video import FrameHandler, VideoReader
-from .methods import Method
-from .transforms import Transformation
-from .util.base import Observable, CloneableDataclass, PrettyDictionary
+from dvw.core.methods import Method
+from dvw.core.transforms import Transformation
+from dvw.io.video import FrameHandler, VideoReader, VideoTunnel
+from dvw.io.watermark import WatermarkBitReader, WatermarkBitWriter
+from dvw.util.base import Observable, CloneableDataclass, PrettyDictionary
+from dvw.util.unit import size2human, timestamp2human, seconds2human
 
 
-class EmbedEvent(IntEnum):
-    BEFORE_EMBEDDING = 1
-    AFTER_EMBEDDING = 2
-    BEFORE_FRAME_EMBEDDING = 3
-    AFTER_FRAME_EMBEDDING = 4
-    ERROR_EMBEDDING = 5
+class EmbedEvent(Enum):
+    BEFORE_EMBEDDING = auto()
+    AFTER_EMBEDDING = auto()
+    BEFORE_FRAME_EMBEDDING = auto()
+    AFTER_FRAME_EMBEDDING = auto()
+    ERROR_EMBEDDING = auto()
 
 
 @dataclass
@@ -40,13 +41,14 @@ class EmbeddingStatistics(CloneableDataclass, PrettyDictionary):
     def dictionary(self) -> Dict[str, Any]:
         return {
             "Total frames": self.total_frames,
+            "Embedded": size2human(self.embedded / 8),
             "Embedded bits": self.embedded,
             "Copied frames": self.copied,
             "Frames with watermark": self.frames_with_watermark,
             "Full watermark": self.full_watermark,
-            "Start time": self.start_time,
-            "End time": self.end_time,
-            "Elapsed time": self.elapsed_time,
+            "Start time": timestamp2human(self.start_time),
+            "End time": timestamp2human(self.end_time),
+            "Elapsed time": seconds2human(self.elapsed_time),
         }
 
 
@@ -72,7 +74,7 @@ class FrameEmbeddingKit(FrameHandler):
 
 
 class WatermarkEmbedder(VideoTunnel):
-    def __init__(self, input_path: str, output_path: str, codec: str = "mp4v") -> None:
+    def __init__(self, input_path: str, output_path: str, codec: str) -> None:
         super().__init__(input_path, output_path, codec)
         self.statistics = EmbeddingStatistics(self.frames)
 
@@ -114,7 +116,7 @@ class WatermarkEmbedder(VideoTunnel):
         )
         return self.statistics
 
-    def _notify_embedding(self, event: Any) -> None:
+    def _notify_embedding(self, event) -> None:
         self.notify(
             event,
             position=self.position,
@@ -123,12 +125,12 @@ class WatermarkEmbedder(VideoTunnel):
         )
 
 
-class ExtractEvent(IntEnum):
-    BEFORE_EXTRACTING = 1
-    AFTER_EXTRACTING = 2
-    BEFORE_FRAME_EXTRACTING = 3
-    AFTER_FRAME_EXTRACTING = 4
-    ERROR_EXTRACTING = 5
+class ExtractEvent(Enum):
+    BEFORE_EXTRACTING = auto()
+    AFTER_EXTRACTING = auto()
+    BEFORE_FRAME_EXTRACTING = auto()
+    AFTER_FRAME_EXTRACTING = auto()
+    ERROR_EXTRACTING = auto()
 
 
 @dataclass
@@ -154,11 +156,12 @@ class ExtractingStatistics(CloneableDataclass, PrettyDictionary):
         return {
             "Total bits": self.total,
             "Left bits": self.left,
+            "Extracted": size2human(self.extracted / 8),
             "Extracted bits": self.extracted,
             "Full watermark": self.full_watermark,
-            "Start time": self.start_time,
-            "End time": self.end_time,
-            "Elapsed time": self.elapsed_time,
+            "Start time": timestamp2human(self.start_time),
+            "End time": timestamp2human(self.end_time),
+            "Elapsed time": seconds2human(self.elapsed_time),
         }
 
 
@@ -211,5 +214,5 @@ class BlindWatermarkExtractor(Observable):
         domain = self.transformation.transform(frame, [])
         return self.method.extract(domain, watermark_writer, quantity)
 
-    def _notify_extracting(self, event: Any, statistics: ExtractingStatistics) -> None:
+    def _notify_extracting(self, event, statistics: ExtractingStatistics) -> None:
         self.notify(event, total=statistics.total, position=statistics.extracted)

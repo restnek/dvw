@@ -1,14 +1,14 @@
 import dataclasses
 import json
 import os.path
+import shutil
 from abc import ABC, abstractmethod
 from typing import List, Iterable, Any, Dict, Optional
-import shutil
 
-from dvw.analysis.metrics import MetricValue
-from dvw.analysis.report.config import WatermarkHolder
-from dvw.analysis.report.util import create_path, filename
-from dvw.core.core import ExtractingStatistics, EmbeddingStatistics
+from dvw.core import ExtractingStatistics, EmbeddingStatistics
+from dvw.metrics.base import MetricValue
+from dvw.report.config import WatermarkHolder
+from dvw.util import create_folder, filename
 
 
 class Report(ABC):
@@ -66,7 +66,7 @@ class HtmlReport(Report):
         assets_folder: str = "assets",
         result_filename: str = "result.json",
     ) -> None:
-        create_path(report_path)
+        create_folder(report_path)
         self.report_path = report_path
         self.experiment_folder = experiment_folder
         self.assets_folder = assets_folder
@@ -86,7 +86,7 @@ class HtmlReport(Report):
     def add_sources(
         self, video_paths: Iterable[str], watermark_holders: Iterable[WatermarkHolder]
     ) -> None:
-        create_path(self.report_path, self.assets_folder)
+        create_folder(self.report_path, self.assets_folder)
         self._add_source_path(video_paths)
         self._add_source_path(h.path for h in watermark_holders)
 
@@ -103,7 +103,7 @@ class HtmlReport(Report):
             self.sources_id += 1
 
     def new_algorithm(self, algorithm: str) -> None:
-        self.current_path = create_path(self.report_path, algorithm)
+        self.current_path = create_folder(self.report_path, algorithm)
         self.current_algorithm = algorithm
         self.current_experiment = 0
         self.current_experiment_data = {}
@@ -120,7 +120,7 @@ class HtmlReport(Report):
         self.current_attack = ""
         self.current_attack_id = 0
 
-        self.current_path = create_path(
+        self.current_path = create_folder(
             self.report_path,
             self.current_algorithm,
             self.experiment_folder + str(self.current_experiment),
@@ -136,7 +136,7 @@ class HtmlReport(Report):
             self.assets_folder + str(self.current_assets)
         )
 
-        self.current_path = create_path(
+        self.current_path = create_folder(
             self.report_path,
             self.current_algorithm,
             self.experiment_folder + str(self.current_experiment),

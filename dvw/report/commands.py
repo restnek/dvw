@@ -1,8 +1,8 @@
 import click
 
-from dvw.analysis.report.brute import BruteForce
-from dvw.analysis.report.config import config2kit
-from dvw.analysis.report.report import HtmlReport
+from dvw.report import HtmlReport
+from dvw.report.brute import BruteForce
+from dvw.report.config import config2kit
 
 
 @click.group(help="Generate report")

@@ -23,7 +23,7 @@ class BaseMetric(Enum):
 @dataclass
 class MetricValue:
     metric: BaseMetric
-    values: Union[List[Tuple[str, Union[float, int]]], float, int]
+    values: Union[List[Tuple[str, float]], float]
 
 
 class Comparator(ABC):

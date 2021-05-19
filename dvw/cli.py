@@ -1,10 +1,10 @@
 import click
 
-from .analysis.report.commands import report
-from .core.commands import embed, extract
-from .analysis.attacks.commands import attack
-from .analysis.metrics.commands import metric
-from .analysis.probe.commands import probe
+from dvw.attacks.commands import attack
+from dvw.core.commands import embed, extract
+from dvw.metrics.commands import metric
+from dvw.probe.commands import probe
+from dvw.report.commands import report
 
 
 @click.group()

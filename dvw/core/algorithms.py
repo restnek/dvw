@@ -1,15 +1,14 @@
 from abc import ABC
 from typing import Type, Dict, Iterable, Optional
 
-from .core import (
+from dvw.core import (
     WatermarkEmbedder,
     BlindWatermarkExtractor,
     FrameEmbeddingKit,
     EmbeddingStatistics,
     ExtractingStatistics,
 )
-from .io import VideoReader, WatermarkBitReader, WatermarkBitWriter
-from .methods import (
+from dvw.core.methods import (
     WindowMedian,
     EvenOddDifferential,
     MeanOverWindowEdges,
@@ -20,7 +19,7 @@ from .methods import (
     Emphasis,
     Method,
 )
-from .transforms import (
+from dvw.core.transforms import (
     frame2dwt_dct,
     frame2dwt_svd,
     frame2dwt_stack,
@@ -28,6 +27,8 @@ from .transforms import (
     Transformation,
     Pipe,
 )
+from dvw.io.video import VideoReader
+from dvw.io.watermark import WatermarkBitReader, WatermarkBitWriter
 
 
 class Algorithm(ABC):

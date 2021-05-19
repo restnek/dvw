@@ -1,7 +1,7 @@
 import click
 
-from .probe import probe as probe_
-from ...ui.terminal import print_probe
+from dvw.probe import probe as probe_
+from dvw.ui.terminal import print_probe
 
 
 @click.command(
