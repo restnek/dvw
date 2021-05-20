@@ -1,5 +1,5 @@
-from dvw.cli import cli
+from dvw.cli import main
 
 
 if __name__ == "__main__":
-    cli()
+    main()

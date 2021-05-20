@@ -10,13 +10,13 @@ from dvw.report.commands import report
 
 @click.group()
 @click.help_option("-h", "--help", help="Show this message and exit")
-def cli():
+def main():
     pass
 
 
-cli.add_command(embed)
-cli.add_command(extract)
-cli.add_command(attack)
-cli.add_command(metric)
-cli.add_command(probe)
-cli.add_command(report)
+main.add_command(embed)
+main.add_command(extract)
+main.add_command(attack)
+main.add_command(metric)
+main.add_command(probe)
+main.add_command(report)
