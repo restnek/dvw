@@ -6,7 +6,6 @@ from dvw.report.config import config2kit
 
 
 @click.group(help="Generate report")
-@click.help_option("-h", "--help", help="Show this message and exit")
 def report():
     pass
 
@@ -25,16 +24,9 @@ def report():
     type=click.Path(),
     help="Output directory",
 )
-@click.help_option("-h", "--help", help="Show this message and exit")
 def start(config, output_path):
     precision = 4
     kit = config2kit(config)
     report_ = HtmlReport(output_path, "exp", "assets", "result.json")
     bf = BruteForce(kit, precision)
     bf.start(report_)
-
-
-@report.command()
-@click.option("-s", "--session", type=click.Path(exists=True), help="Session path")
-def resume(**kwargs):
-    print(kwargs)

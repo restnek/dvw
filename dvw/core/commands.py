@@ -1,10 +1,9 @@
-from typing import Dict, Any, Iterable
+from typing import Iterable, Any, Dict, List, Type
 
 import click
-from click import IntRange, Choice, FloatRange
+from click import IntRange, Choice, FloatRange, Context, Option
 from pywt import wavelist
 
-from dvw.core import EmbeddingStatistics, ExtractingStatistics
 from dvw.core.algorithms import (
     DwtWindowMedian,
     Algorithm,
@@ -16,18 +15,41 @@ from dvw.core.transforms import WaveletSubband
 from dvw.io.watermark import WatermarkType
 from dvw.ui.terminal import print_properties
 from dvw.util.click import (
-    IgnoreRequiredWithHelp,
-    update_context,
     EnumType,
-    default_help_context,
+    add_options,
+    TransparentGroup,
+    update_context,
 )
 
 
-@click.group(
-    help="Embedding watermark",
-    context_settings=default_help_context(),
-    cls=IgnoreRequiredWithHelp,
-)
+_WAVELET_OPTIONS: List[Type[Option]] = [
+    click.option(
+        "--wavelet", type=Choice(wavelist()), default="haar", help="Wavelet to use"
+    ),
+    click.option(
+        "--level",
+        type=IntRange(min=0),
+        default=1,
+        help="Wavelet decomposition level (must be >= 0)",
+    ),
+    click.option(
+        "--subband",
+        "subbands",
+        multiple=True,
+        type=EnumType(WaveletSubband, by_name=True),
+        default=["LL"],
+        help="Wavelet decomposition subband",
+    ),
+    click.option(
+        "--emphasis",
+        type=EnumType(Emphasis),
+        default="capacity",
+        help="Watermark embedding emphasis",
+    ),
+]
+
+
+@click.group(help="Embedding watermark", cls=TransparentGroup)
 @click.option(
     "-i",
     "--input",
@@ -66,10 +88,9 @@ from dvw.util.click import (
     type=IntRange(min=0),
     help="New watermark width (relevant for bw-image type)",
 )
-@click.help_option("-h", "--help", help="Show this message and exit")
 @click.pass_context
-def embed(ctx, **kwargs):
-    update_context(ctx, **kwargs, handler=_embed)
+def embed(ctx: Context) -> None:
+    update_context(ctx, handler=_embed)
 
 
 def _embed(
@@ -78,17 +99,14 @@ def _embed(
     output_path: str,
     watermark_path: str,
     watermark_type: WatermarkType,
-    **kwargs: Any
-) -> EmbeddingStatistics:
+    **kwargs
+) -> None:
     with watermark_type.reader(watermark_path, **kwargs) as watermark_reader:
-        return algorithm.embed(input_path, output_path, watermark_reader)
+        statistics = algorithm.embed(input_path, output_path, watermark_reader)
+        print_properties(statistics, algorithm.__class__.__name__)
 
 
-@click.group(
-    help="Blind extracting watermark",
-    context_settings=default_help_context(),
-    cls=IgnoreRequiredWithHelp,
-)
+@click.group(help="Blind extracting watermark", cls=TransparentGroup)
 @click.option(
     "-i",
     "--input",
@@ -122,10 +140,9 @@ def _embed(
 @click.option(
     "-q", "--quantity", required=True, type=int, help="Number of extraction bits"
 )
-@click.help_option("-h", "--help", help="Show this message and exit")
 @click.pass_context
-def extract(ctx, **kwargs):
-    update_context(ctx, **kwargs, handler=_extract)
+def extract(ctx: Context) -> None:
+    update_context(ctx, handler=_extract)
 
 
 def _extract(
@@ -134,30 +151,18 @@ def _extract(
     watermark_path: str,
     watermark_type: WatermarkType,
     quantity: int,
-    **kwargs: Any
-) -> ExtractingStatistics:
+    **kwargs
+) -> None:
     with watermark_type.writer(watermark_path, **kwargs) as watermark_writer:
-        return algorithm.extract(input_path, watermark_writer, quantity)
+        statistics = algorithm.extract(input_path, watermark_writer, quantity)
+        print_properties(statistics, algorithm.__class__.__name__)
 
 
-@click.command(help="DWT window median", short_help="DWT window median")
-@click.option(
-    "--wavelet", type=Choice(wavelist()), default="haar", help="Wavelet to use"
+@click.command(
+    help="DWT window median (long version)",
+    short_help="DWT window median",
 )
-@click.option(
-    "--level",
-    type=IntRange(min=0),
-    default=1,
-    help="Wavelet decomposition level (must be >= 0)",
-)
-@click.option(
-    "--subband",
-    "subbands",
-    multiple=True,
-    type=EnumType(WaveletSubband, by_name=True),
-    default=["LL"],
-    help="Wavelet decomposition subband",
-)
+@add_options(_WAVELET_OPTIONS)
 @click.option(
     "--position",
     type=EnumType(WindowPosition),
@@ -165,13 +170,6 @@ def _extract(
     help="Window position",
 )
 @click.option("--window-size", type=IntRange(min=3), default=3, help="Window size")
-@click.option(
-    "--emphasis",
-    type=EnumType(Emphasis),
-    default="capacity",
-    help="Watermark embedding emphasis",
-)
-@click.help_option("-h", "--help", help="Show this message and exit")
 @click.pass_obj
 def dwt_window_median(
     group_args: Dict[str, Any],
@@ -181,38 +179,24 @@ def dwt_window_median(
     position: WindowPosition,
     window_size: int,
     emphasis: Emphasis,
-    **kwargs: Any
+    **kwargs
 ) -> None:
     algorithm = DwtWindowMedian(
         wavelet, level, subbands, position, window_size, emphasis
     )
-    statistics = group_args.pop("handler")(algorithm, **group_args, **kwargs)
-    print_properties(statistics, "dwt-window-median")
+    group_args.pop("handler")(algorithm, **kwargs)
 
 
 @click.command(
     help="DWT-DCT differential between even and odd components",
     short_help="DWT-DCT differential between even and odd components",
 )
+@add_options(_WAVELET_OPTIONS)
 @click.option(
-    "--wavelet", type=Choice(wavelist()), default="haar", help="Wavelet to use"
-)
-@click.option(
-    "--level",
-    type=IntRange(min=0),
-    default=1,
-    help="Wavelet decomposition level (must be >= 0)",
-)
-@click.option(
-    "--subband",
-    "subbands",
-    multiple=True,
-    type=EnumType(WaveletSubband, by_name=True),
-    default=["LL"],
-    help="Wavelet decomposition coefficient",
-)
-@click.option(
-    "--offset", required=True, type=FloatRange(min=0, max=1), help="Offset coefficient"
+    "--offset",
+    required=True,
+    type=FloatRange(min=0, max=1),
+    help="Offset coefficient",
 )
 @click.option(
     "--area", required=True, type=FloatRange(min=0, max=1), help="Area coefficient"
@@ -224,13 +208,6 @@ def dwt_window_median(
     help="Number of times of bit embedding/extraction",
 )
 @click.option("--alpha", required=True, type=float, help="Alpha coefficient")
-@click.option(
-    "--emphasis",
-    type=EnumType(Emphasis),
-    default="capacity",
-    help="Watermark embedding emphasis",
-)
-@click.help_option("-h", "--help", help="Show this message and exit")
 @click.pass_obj
 def dwt_dct_even_odd_differential(
     group_args: Dict[str, Any],
@@ -242,45 +219,21 @@ def dwt_dct_even_odd_differential(
     repeats: int,
     alpha: float,
     emphasis: Emphasis,
-    **kwargs: Any
-):
+    **kwargs
+) -> None:
     algorithm = DwtDctEvenOddDifferential(
         wavelet, level, subbands, offset, area, repeats, alpha, emphasis
     )
-    statistics = group_args.pop("handler")(algorithm, **group_args, **kwargs)
-    print_properties(statistics, "dwt-dct-even-odd-differential")
+    group_args.pop("handler")(algorithm, **kwargs)
 
 
 @click.command(
     help="DWT-DCT differential between even and odd components",
     short_help="DWT-DCT differential between even and odd components",
 )
-@click.option(
-    "--wavelet", type=Choice(wavelist()), default="haar", help="Wavelet to use"
-)
-@click.option(
-    "--level",
-    type=IntRange(min=0),
-    default=1,
-    help="Wavelet decomposition level (must be >= 0)",
-)
-@click.option(
-    "--subband",
-    "subbands",
-    multiple=True,
-    type=EnumType(WaveletSubband, by_name=True),
-    default=["LL"],
-    help="Wavelet decomposition coefficient",
-)
+@add_options(_WAVELET_OPTIONS)
 @click.option("--window-size", type=IntRange(min=3), default=3, help="Window size")
 @click.option("--alpha", required=True, type=float, help="Alpha coefficient")
-@click.option(
-    "--emphasis",
-    type=EnumType(Emphasis),
-    default="capacity",
-    help="Watermark embedding emphasis",
-)
-@click.help_option("-h", "--help", help="Show this message and exit")
 @click.pass_obj
 def dwt_svd_mean_over_window_edges(
     group_args: Dict[str, Any],
@@ -290,13 +243,12 @@ def dwt_svd_mean_over_window_edges(
     window_size: int,
     alpha: float,
     emphasis: Emphasis,
-    **kwargs: Any
-):
+    **kwargs
+) -> None:
     algorithm = DwtSvdMeanOverWindowEdges(
         wavelet, level, subbands, window_size, alpha, emphasis
     )
-    statistics = group_args.pop("handler")(algorithm, **group_args, **kwargs)
-    print_properties(statistics, "dwt-svd-mean-over-window-edges")
+    group_args.pop("handler")(algorithm, **kwargs)
 
 
 embed.add_command(dwt_window_median)

@@ -1,3 +1,5 @@
+from typing import Iterable, Optional
+
 import click
 from click import IntRange
 
@@ -5,10 +7,10 @@ from dvw.io.watermark import WatermarkType
 from dvw.metrics.video import VideoMetric, VideoComparator
 from dvw.metrics.watermark import WatermarkMetric, WatermarkComparator
 from dvw.ui.terminal import print_metrics
-from dvw.util.click import append_const, EnumType, update_context
+from dvw.util.click import EnumType, TransparentGroup, append_flag
 
 
-@click.group(help="Calculate quality metrics between two files")
+@click.group(help="Calculate quality metrics between two files", cls=TransparentGroup)
 @click.option(
     "-p",
     "--precision",
@@ -16,10 +18,8 @@ from dvw.util.click import append_const, EnumType, update_context
     type=IntRange(min=0),
     help="Precision for decimal metric values",
 )
-@click.help_option("-h", "--help", help="Show this message and exit")
-@click.pass_context
-def metric(ctx, **kwargs):
-    update_context(ctx, **kwargs)
+def metric() -> None:
+    pass
 
 
 @metric.command(
@@ -29,23 +29,24 @@ def metric(ctx, **kwargs):
 @click.option(
     "--psnr",
     is_flag=True,
-    callback=append_const("metrics", VideoMetric),
+    callback=append_flag("metrics", VideoMetric),
     help="Calculate PSNR (peak signal-to-noise ratio)",
 )
 @click.option(
     "--mssim",
     is_flag=True,
-    callback=append_const("metrics", VideoMetric),
+    callback=append_flag("metrics", VideoMetric),
     help="Calculate MSSIM (mean structural similarity)",
 )
-@click.help_option("-h", "--help", help="Show this message and exit")
 @click.argument("files", nargs=2, type=click.Path(exists=True))
-@click.pass_obj
-def video(group_args, **kwargs):
-    comparator = VideoComparator(
-        group_args["precision"], *kwargs.get("metrics", list(VideoMetric))
-    )
-    metrics = comparator.compare(*kwargs["files"])
+def video(
+    precision: int,
+    files: Iterable[str],
+    metrics: Optional[Iterable[VideoMetric]] = None,
+) -> None:
+    metrics = metrics or list(VideoMetric)
+    comparator = VideoComparator(precision, *metrics)
+    metrics = comparator.compare(*files)
     print_metrics(metrics)
 
 
@@ -56,13 +57,13 @@ def video(group_args, **kwargs):
 @click.option(
     "--ber",
     is_flag=True,
-    callback=append_const("metrics", WatermarkMetric),
+    callback=append_flag("metrics", WatermarkMetric),
     help="Calculate BER (bit error rate)",
 )
 @click.option(
     "--nc",
     is_flag=True,
-    callback=append_const("metrics", VideoMetric),
+    callback=append_flag("metrics", WatermarkMetric),
     help="Calculate NC (normalized correlation)",
 )
 @click.option(
@@ -79,12 +80,14 @@ def video(group_args, **kwargs):
     type=IntRange(min=0),
     help="Watermark width (relevant for bw-image type)",
 )
-@click.help_option("-h", "--help", help="Show this message and exit")
 @click.argument("files", nargs=2, type=click.Path(exists=True))
-@click.pass_obj
-def watermark(group_args, **kwargs):
-    comparator = WatermarkComparator(
-        group_args["precision"], *kwargs.get("metrics", list(WatermarkMetric))
-    )
-    metrics = comparator.compare(*kwargs["files"], **kwargs)
+def watermark(
+    precision: int,
+    files: Iterable[str],
+    metrics: Optional[Iterable[WatermarkMetric]] = None,
+    **kwargs
+) -> None:
+    metrics = metrics or list(WatermarkMetric)
+    comparator = WatermarkComparator(precision, *metrics)
+    metrics = comparator.compare(*files, **kwargs)
     print_metrics(metrics)

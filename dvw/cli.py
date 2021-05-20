@@ -1,6 +1,7 @@
 import click
 
 from dvw.attacks.commands import attack
+
 from dvw.core.commands import embed, extract
 from dvw.metrics.commands import metric
 from dvw.probe.commands import probe

@@ -1,26 +1,30 @@
 from enum import Enum
-from typing import List, Any, Optional, Callable, Type, Dict
+from typing import List, Any, Optional, Callable, Type
 
 import click
-from click import Context, Parameter, Option
+from click import Context, Parameter, Option, Group
 
 from .util import enum_values
 
 
-class IgnoreRequiredWithHelp(click.Group):
+class TransparentGroup(Group):
     def parse_args(self, ctx: Context, args: List[str]) -> List[str]:
-        is_help = any(h in args for h in ctx.help_option_names)
-        if is_help:
-            for param in self.params:
-                param.required = False
+        self._pass_params_to_commands()
         return super().parse_args(ctx, args)
+
+    def _pass_params_to_commands(self) -> None:
+        for c in self.commands.values():
+            params = list(self.params)
+            params.extend(c.params)
+            c.params = params
+        self.params = []
 
 
 class EnumType(click.Choice):
     def __init__(
         self,
         enum: Type[Enum],
-        type_fn: Optional[Callable[[Any], Any]] = None,  # maybe should accept str?
+        type_fn: Optional[Callable[[Any], Any]] = None,
         by_name: bool = False,
     ) -> None:
         choices = list(enum.__members__) if by_name else enum_values(enum)
@@ -31,7 +35,7 @@ class EnumType(click.Choice):
         self.by_name = by_name
 
     def convert(
-        self, value: Any, param: Optional[Parameter], ctx: Optional[Context]
+        self, value, param: Optional[Parameter], ctx: Optional[Context]
     ) -> Enum:
         enum_value = super().convert(value, param, ctx)
         if self.type_fn:
@@ -41,11 +45,11 @@ class EnumType(click.Choice):
         return self.enum(enum_value)
 
 
-def append_const(option, type_):
-    def callback(ctx, param, value):
+def append_flag(option, type_):
+    def callback(ctx: Context, param: Parameter, value):
         if value:
             const = ctx.params.setdefault(option, [])
-            const.append(type_(value))
+            const.append(type_(param.name))
         return value
 
     return callback
@@ -56,11 +60,7 @@ def update_context(ctx: Context, **kwargs) -> None:
     ctx.obj.update(kwargs)
 
 
-def default_help_context() -> Dict[str, Any]:
-    return {"help_option_names": ["-h", "--help"]}
-
-
-def add_click_options(options: List[Type[Option]]) -> Callable:
+def add_options(options: List[Type[Option]]) -> Callable:
     def _add_options(func):
         for option in reversed(options):
             func = option(func)

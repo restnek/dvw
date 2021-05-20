@@ -13,17 +13,14 @@ from dvw.attacks import (
     SaltAndPepper,
 )
 from dvw.util.click import (
-    IgnoreRequiredWithHelp,
-    update_context,
-    default_help_context,
     EnumType,
+    TransparentGroup,
 )
 
 
 @click.group(
     help="Video file attacks",
-    context_settings=default_help_context(),
-    cls=IgnoreRequiredWithHelp,
+    cls=TransparentGroup,
 )
 @click.option(
     "-i",
@@ -41,18 +38,14 @@ from dvw.util.click import (
     type=click.Path(),
     help="Output video file",
 )
-@click.help_option("-h", "--help", help="Show this message and exit")
-@click.pass_context
-def attack(ctx, **kwargs):
-    update_context(ctx, **kwargs)
+def attack() -> None:
+    pass
 
 
 @attack.command()
 @click.option("--axis", required=True, type=EnumType(FlipAxis), help="Flip axis")
-@click.help_option("-h", "--help", help="Show this message and exit")
-@click.pass_obj
-def flip(group_args, axis):
-    attack_video(Flip(axis), **group_args)
+def flip(axis: FlipAxis, **kwargs) -> None:
+    attack_video(Flip(axis), **kwargs)
 
 
 @attack.command()
@@ -70,10 +63,8 @@ def flip(group_args, axis):
 )
 @click.option("--width", type=IntRange(min=0), help="New frame width")
 @click.option("--height", type=IntRange(min=0), help="New frame height")
-@click.help_option("-h", "--help", help="Show this message and exit")
-@click.pass_obj
-def crop(group_args, y, x, height, width):
-    attack_video(Crop(y, x, height, width), **group_args)
+def crop(y: int, x: int, height: int, width: int, **kwargs) -> None:
+    attack_video(Crop(y, x, height, width), **kwargs)
 
 
 @attack.command()
@@ -92,20 +83,16 @@ def crop(group_args, y, x, height, width):
 @click.option("--width", required=True, type=IntRange(min=0), help="Shape width")
 @click.option("--height", required=True, type=IntRange(min=0), help="Shape height")
 @click.option("--value", default=0, type=IntRange(min=0, max=255), help="Fill value")
-@click.help_option("-h", "--help", help="Show this message and exit")
-@click.pass_obj
-def fill(group_args, y, x, height, width, value):
-    attack_video(Fill(y, x, height, width, value), **group_args)
+def fill(y: int, x: int, height: int, width: int, value: int, **kwargs) -> None:
+    attack_video(Fill(y, x, height, width, value), **kwargs)
 
 
 @attack.command()
 @click.option(
     "--angle", required=True, type=EnumType(RotateAngle, int), help="Rotate angle"
 )
-@click.help_option("-h", "--help", help="Show this message and exit")
-@click.pass_obj
-def rotate(group_args, angle):
-    attack_video(Rotate(angle), **group_args)
+def rotate(angle: RotateAngle, **kwargs) -> None:
+    attack_video(Rotate(angle), **kwargs)
 
 
 @attack.command()
@@ -118,17 +105,13 @@ def rotate(group_args, angle):
 @click.option(
     "--area", default=1, type=FloatRange(min=0, max=1), help="Noise propagation area"
 )
-@click.help_option("-h", "--help", help="Show this message and exit")
-@click.pass_obj
-def gaussian(group_args, std, area):
-    attack_video(Gaussian(std, area), **group_args)
+def gaussian(std: float, area: float, **kwargs) -> None:
+    attack_video(Gaussian(std, area), **kwargs)
 
 
 @attack.command()
 @click.option(
     "--area", default=1, type=FloatRange(min=0, max=1), help="Noise propagation area"
 )
-@click.help_option("-h", "--help", help="Show this message and exit")
-@click.pass_obj
-def salt_and_pepper(group_args, area):
-    attack_video(SaltAndPepper(area), **group_args)
+def salt_and_pepper(area: float, **kwargs) -> None:
+    attack_video(SaltAndPepper(area), **kwargs)
