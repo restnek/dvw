@@ -63,4 +63,5 @@ def print_probe(probe: VideoProbe) -> None:
 
 
 def print_metrics(metrics: Iterable[MetricValue]) -> None:
-    pass
+    metric_panels = [PropertyPanel(m.dictionary(), m.metric.full_name) for m in metrics]
+    print(Columns(metric_panels))

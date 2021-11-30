@@ -1,18 +1,12 @@
 import click
+from click import IntRange
 
 from dvw.report import HtmlReport
 from dvw.report.brute import BruteForce
 from dvw.report.config import config2kit
 
 
-@click.group(help="Generate report")
-def report():
-    pass
-
-
-@report.command(
-    help="Start generating the report", short_help="Start generating the report"
-)
+@click.command(help="Generate report")
 @click.option(
     "-c", "--config", type=click.Path(exists=True), help="Config file with settings"
 )
@@ -24,8 +18,15 @@ def report():
     type=click.Path(),
     help="Output directory",
 )
-def start(config, output_path):
-    precision = 4
+@click.option(
+    "-p",
+    "--precision",
+    default=4,
+    metavar="INTEGER",
+    type=IntRange(min=0),
+    help="Precision for decimal metric values (default 4)",
+)
+def report(config, output_path, precision):
     kit = config2kit(config)
     report_ = HtmlReport(output_path, "exp", "assets", "result.json")
     bf = BruteForce(kit, precision)

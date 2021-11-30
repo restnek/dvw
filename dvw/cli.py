@@ -8,8 +8,9 @@ from dvw.probe.commands import probe
 from dvw.report.commands import report
 
 
-@click.group()
-@click.help_option("-h", "--help", help="Show this message and exit")
+@click.group(
+    help="CLI tool for analyzing, embedding and extracting digital video watermarks",
+)
 def main():
     pass
 

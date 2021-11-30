@@ -133,7 +133,7 @@ class Validator(cerberus.Validator):
                 combs.extend(combinations(values, i))
             return combs
         values = self._normalize_coerce_aslist(x)
-        return [[WaveletSubband(v)] for v in values]
+        return [[WaveletSubband(x) for x in v] for v in values]
 
     def _normalize_coerce_winpos(self, x):
         return self._normalize_coerce_aslist(x, WindowPosition)
@@ -249,8 +249,7 @@ def config2kit(path: str) -> AnalysisKit:
 
         validator = Validator(_SCHEMA)
         valid = validator.validate(config, normalize=False)
-        if valid:
-            config = validator.normalized(config)
+        config = validator.normalized(config)
 
         return AnalysisKit.from_dict(config)
 
@@ -340,7 +339,7 @@ _SCHEMA = {
         "type": "dict",
         "required": False,
         "schema": {
-            "flip": asenum("flipaxis"),
+            "flip": {"type": "dict", "schema": {"axis": asenum("flipaxis")}},
             "resize": {
                 "type": "dict",
                 "schema": {"height": integers(min=0), "width": integers(min=0)},
@@ -364,7 +363,7 @@ _SCHEMA = {
                     "value": integers(min=0, max=255),
                 },
             },
-            "rotate": asenum("rotang"),
+            "rotate": {"type": "dict", "schema": {"angle": numbers(min=0)}},
             "gaussian": {
                 "type": "dict",
                 "schema": {"std": numbers(min=0), "area": numbers(min=0, max=1)},

@@ -11,8 +11,8 @@ def _ber(
     watermark_reader2: WatermarkBitReader,
     precision: int,
 ) -> MetricValue:
-    errors = 0
     total = 0
+    errors = 0
 
     while watermark_reader1.available() and watermark_reader2.available():
         bit1 = watermark_reader1.read_bit()
@@ -22,8 +22,8 @@ def _ber(
 
     ber_ = 100 * ((errors / total) if total else 1)
     ber_ = round(ber_, precision)
-    values = [("Total", total), ("Errors", errors), ("BER", ber_)]
-    return MetricValue(WatermarkMetric.BER, values)
+
+    return MetricValue(WatermarkMetric.BER, ber_, {"Total": total, "Errors": errors})
 
 
 def _normalized_correlation(

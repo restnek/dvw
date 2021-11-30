@@ -1,8 +1,7 @@
 from typing import Iterable, Any, Dict, List, Type
 
 import click
-from click import IntRange, Choice, FloatRange, Context, Option
-from pywt import wavelist
+from click import IntRange, FloatRange, Context, Option
 
 from dvw.core.algorithms import (
     DwtWindowMedian,
@@ -23,14 +22,13 @@ from dvw.util.click import (
 
 
 _WAVELET_OPTIONS: List[Type[Option]] = [
-    click.option(
-        "--wavelet", type=Choice(wavelist()), default="haar", help="Wavelet to use"
-    ),
+    click.option("--wavelet", default="haar", help="Wavelet to use (default haar)"),
     click.option(
         "--level",
-        type=IntRange(min=0),
         default=1,
-        help="Wavelet decomposition level (must be >= 0)",
+        metavar="INTEGER",
+        type=IntRange(min=1),
+        help="Wavelet decomposition level (must be > 0) (default 1)",
     ),
     click.option(
         "--subband",
@@ -38,13 +36,13 @@ _WAVELET_OPTIONS: List[Type[Option]] = [
         multiple=True,
         type=EnumType(WaveletSubband, by_name=True),
         default=["LL"],
-        help="Wavelet decomposition subband",
+        help="Wavelet decomposition subband (default LL)",
     ),
     click.option(
         "--emphasis",
-        type=EnumType(Emphasis),
         default="capacity",
-        help="Watermark embedding emphasis",
+        type=EnumType(Emphasis),
+        help="Watermark embedding emphasis (capacity)",
     ),
 ]
 
@@ -85,6 +83,7 @@ _WAVELET_OPTIONS: List[Type[Option]] = [
 @click.option(
     "-W",
     "--width",
+    metavar="INTEGER",
     type=IntRange(min=0),
     help="New watermark width (relevant for bw-image type)",
 )
@@ -134,6 +133,7 @@ def _embed(
 @click.option(
     "-W",
     "--width",
+    metavar="INTEGER",
     type=IntRange(min=0),
     help="New watermark width (relevant for bw-image type)",
 )
@@ -167,9 +167,15 @@ def _extract(
     "--position",
     type=EnumType(WindowPosition),
     default=WindowPosition.HORIZONTAL,
-    help="Window position",
+    help="Window position (default hr)",
 )
-@click.option("--window-size", type=IntRange(min=3), default=3, help="Window size")
+@click.option(
+    "--window-size",
+    default=3,
+    metavar="INTEGER",
+    type=IntRange(min=3),
+    help="Window size (default 3)",
+)
 @click.pass_obj
 def dwt_window_median(
     group_args: Dict[str, Any],

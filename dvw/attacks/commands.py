@@ -18,10 +18,7 @@ from dvw.util.click import (
 )
 
 
-@click.group(
-    help="Video file attacks",
-    cls=TransparentGroup,
-)
+@click.group(help="Video file attacks", cls=TransparentGroup)
 @click.option(
     "-i",
     "--input",
@@ -67,31 +64,51 @@ def crop(y: int, x: int, height: int, width: int, **kwargs) -> None:
     attack_video(Crop(y, x, height, width), **kwargs)
 
 
-@attack.command()
+@attack.command(
+    help="Fill the selected area of the frame with the specified value",
+)
 @click.option(
     "-x",
     default=0,
+    metavar="INTEGER",
     type=IntRange(min=0),
-    help="The x coordinate of the first pixel in frame",
+    help="The x coordinate of the first pixel in frame (default 0)",
 )
 @click.option(
     "-y",
     default=0,
+    metavar="INTEGER",
     type=IntRange(min=0),
-    help="The y coordinate of the first pixel in frame",
+    help="The y coordinate of the first pixel in frame (default 0)",
 )
-@click.option("--width", required=True, type=IntRange(min=0), help="Shape width")
-@click.option("--height", required=True, type=IntRange(min=0), help="Shape height")
-@click.option("--value", default=0, type=IntRange(min=0, max=255), help="Fill value")
+@click.option(
+    "--width",
+    required=True,
+    metavar="INTEGER",
+    type=IntRange(min=0),
+    help="Shape width",
+)
+@click.option(
+    "--height",
+    required=True,
+    metavar="INTEGER",
+    type=IntRange(min=0),
+    help="Shape height",
+)
+@click.option(
+    "--value",
+    default=0,
+    metavar="INTEGER",
+    type=IntRange(min=0, max=255),
+    help="Fill value (default 0)",
+)
 def fill(y: int, x: int, height: int, width: int, value: int, **kwargs) -> None:
     attack_video(Fill(y, x, height, width, value), **kwargs)
 
 
 @attack.command()
-@click.option(
-    "--angle", required=True, type=EnumType(RotateAngle, int), help="Rotate angle"
-)
-def rotate(angle: RotateAngle, **kwargs) -> None:
+@click.option("--angle", required=True, type=float, help="Rotate angle")
+def rotate(angle: float, **kwargs) -> None:
     attack_video(Rotate(angle), **kwargs)
 
 

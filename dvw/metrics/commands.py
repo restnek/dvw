@@ -15,8 +15,9 @@ from dvw.util.click import EnumType, TransparentGroup, append_flag
     "-p",
     "--precision",
     default=4,
+    metavar="INTEGER",
     type=IntRange(min=0),
-    help="Precision for decimal metric values",
+    help="Precision for decimal metric values (default 4)",
 )
 def metric() -> None:
     pass
@@ -43,11 +44,12 @@ def video(
     precision: int,
     files: Iterable[str],
     metrics: Optional[Iterable[VideoMetric]] = None,
+    **kwargs
 ) -> None:
     metrics = metrics or list(VideoMetric)
     comparator = VideoComparator(precision, *metrics)
-    metrics = comparator.compare(*files)
-    print_metrics(metrics)
+    metric_values = comparator.compare(*files)
+    print_metrics(metric_values)
 
 
 @metric.command(
@@ -77,6 +79,7 @@ def video(
 @click.option(
     "-W",
     "--width",
+    metavar="INTEGER",
     type=IntRange(min=0),
     help="Watermark width (relevant for bw-image type)",
 )
@@ -89,5 +92,5 @@ def watermark(
 ) -> None:
     metrics = metrics or list(WatermarkMetric)
     comparator = WatermarkComparator(precision, *metrics)
-    metrics = comparator.compare(*files, **kwargs)
-    print_metrics(metrics)
+    metric_values = comparator.compare(*files, **kwargs)
+    print_metrics(metric_values)

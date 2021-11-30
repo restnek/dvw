@@ -1,7 +1,9 @@
 from abc import abstractmethod, ABC
 from dataclasses import dataclass
 from enum import Enum
-from typing import List, Tuple, Union, Optional, Callable
+from typing import List, Optional, Callable, Dict, Any
+
+from dvw.util.base import PrettyDictionary
 
 
 class BaseMetric(Enum):
@@ -21,9 +23,16 @@ class BaseMetric(Enum):
 
 
 @dataclass
-class MetricValue:
+class MetricValue(PrettyDictionary):
     metric: BaseMetric
-    values: Union[List[Tuple[str, float]], float]
+    value: float
+    statistics: Optional[Dict[str, float]] = None
+
+    def dictionary(self) -> Dict[str, Any]:
+        data = {"Value": f"{self.value}{self.metric.unit or ''}"}
+        if self.statistics:
+            data.update(self.statistics)
+        return data
 
 
 class Comparator(ABC):

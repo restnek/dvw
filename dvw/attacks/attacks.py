@@ -8,7 +8,7 @@ import numpy as np
 from dvw.core.transforms import Transformation
 from dvw.io.video import VideoTunnel, FrameHandler
 from dvw.util import shape2shape
-from dvw.util.types import Shape2dParameters, Shape2d
+from dvw.util.types import Shape2dParameters, Shape2d, FrameWithReturn
 
 
 class Attack(Transformation, FrameHandler, ABC):
@@ -101,18 +101,29 @@ class RotateAngle(Enum):
         return obj
 
 
+# class Rotate(Attack):
+#     def __init__(self, angle: RotateAngle) -> None:
+#         self.angle = angle
+#
+#     @property
+#     def shape(self) -> Shape2dParameters:
+#         if RotateAngle.ROTATE_180 != self.angle:
+#             return -1
+#         return None
+#
+#     def handle(self, frame: np.ndarray) -> np.ndarray:
+#         return cv2.rotate(frame, self.angle.code)
+
+
 class Rotate(Attack):
-    def __init__(self, angle: RotateAngle) -> None:
+    def __init__(self, angle: float):
         self.angle = angle
 
-    @property
-    def shape(self) -> Shape2dParameters:
-        if RotateAngle.ROTATE_180 != self.angle:
-            return -1
-        return None
-
-    def handle(self, frame: np.ndarray) -> np.ndarray:
-        return cv2.rotate(frame, self.angle.code)
+    def handle(self, frame: np.ndarray) -> FrameWithReturn:
+        resolution = frame.shape[1::-1]
+        frame_center = tuple(np.array(resolution) / 2)
+        rot_mat = cv2.getRotationMatrix2D(frame_center, self.angle, 1.0)
+        return cv2.warpAffine(frame, rot_mat, resolution, flags=cv2.INTER_LINEAR)
 
 
 class Gaussian(Attack):

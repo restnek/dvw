@@ -219,7 +219,8 @@ class MeanOverWindowEdgesBitManipulator(BitManipulator):
     def embed(self, window: np.ndarray, bit: int) -> np.ndarray:
         bit = bit2sign(bit)
         sm = window[0] + window[-1]
-        window[1:-1] = 0.5 * (sm + bit * self.alpha * sm)
+        diff = window[0] - window[-1]
+        window[1:-1] = 0.5 * (sm + bit * self.alpha * diff)
         return window
 
     def extract(self, window: np.ndarray) -> int:
